@@ -1,4 +1,4 @@
-const base = import.meta.env.VITE_API_BASE_URL || '';
+const base = (import.meta as any).env.VITE_API_BASE_URL || '';
 export const api = {
   async post(path: string, body: Record<string, unknown>) {
     if (!base || !/^https:\/\//.test(base)) throw new Error('Не настроен защищённый сервер FATIR (VITE_API_BASE_URL).');
