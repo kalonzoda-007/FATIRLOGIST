@@ -19,3 +19,5 @@ jobs:
       - run: npm install
       - run: npm run build
       - run: npx tsc --noEmit
+      - run: node --check worker/src/index.js
+      - run: node --test worker/tests/*.test.js
