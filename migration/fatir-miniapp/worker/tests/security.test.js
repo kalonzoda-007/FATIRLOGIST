@@ -1,0 +1,70 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createHmac} from 'node:crypto';
+import worker from '../src/index.js';
+const TOKEN='unit-test-bot-token-NOT-A-REAL-SECRET';
+const ORIGIN='https://kalonzoda-007.github.io';
+const hmac=(key,data)=>createHmac('sha256',key).update(data).digest('hex');
+function telegramData(id='12345678'){
+ const p=new URLSearchParams();
+ p.set('auth_date',String(Math.floor(Date.now()/1000)));
+ p.set('user',JSON.stringify({id:Number(id),first_name:'Tester'}));
+ const check=[...p.entries()].sort(([a],[b])=>a.localeCompare(b,'en')).map(([k,v])=>k+'='+v).join('\n');
+ const key=createHmac('sha256','WebAppData').update(TOKEN).digest();
+ p.set('hash',hmac(key,check)); return p.toString();
+}
+const request=(path,body,origin=ORIGIN)=>new Request('https://worker.example'+path,{method:'POST',
+ headers:{'Content-Type':'application/json',Origin:origin},body:JSON.stringify(body)});
+function env(extra={}) {
+ return {TELEGRAM_BOT_TOKEN:TOKEN,ALLOWED_ORIGIN:ORIGIN,
+ N8N_BOOTSTRAP_URL:'https://example.invalid/bootstrap',
+ N8N_SUBMIT_URL:'https://example.invalid/submit',
+ N8N_STATUS_URL:'https://example.invalid/status',
+ N8N_DISCUSSION_URL:'https://example.invalid/discussion',
+ ...extra};
+}
+test('rejects requests without signed Telegram initData',async()=>{
+ const r=await worker.fetch(request('/api/bootstrap',{initData:''}),env());
+ assert.equal(r.status,401);
+});
+test('rejects cross-site browser origin',async()=>{
+ const r=await worker.fetch(request('/api/bootstrap',{initData:telegramData()},'https://attacker.invalid'),env());
+ assert.equal(r.status,403);
+});
+test('bootstrap requires user ID match and recognized role',async()=>{
+ const original=globalThis.fetch;
+ try {
+  globalThis.fetch=async()=>new Response(JSON.stringify({ok:true,user:{id:'12345678',role:'logistic',name:'Tester'},products:[],clients:[]}),{status:200});
+  const r=await worker.fetch(request('/api/bootstrap',{initData:telegramData()}),env());
+  assert.equal(r.status,200);assert.equal((await r.json()).user.role,'logistic');
+  globalThis.fetch=async()=>new Response(JSON.stringify({ok:true,user:{id:'99999999',role:'admin'},products:[],clients:[]}),{status:200});
+  const rejected=await worker.fetch(request('/api/bootstrap',{initData:telegramData()}),env());
+  assert.equal(rejected.status,403);
+ }finally{globalThis.fetch=original}
+});
+test('refuses discussion writes during migration',async()=>{
+ const original=globalThis.fetch;
+ try {
+  globalThis.fetch=async()=>new Response(JSON.stringify({ok:true,user:{id:'12345678',role:'logistic'},products:[],clients:[]}),{status:200});
+  const r=await worker.fetch(request('/api/discussions/apply',{initData:telegramData()}),env());
+  assert.equal(r.status,503);
+ }finally{globalThis.fetch=original}
+});
+test('HMAC verifier rejects bad signature and replay with unique D1 nonce',async()=>{
+ const e=env(); const ts=String(Date.now()),nonce='a'.repeat(36);
+ const plain={telegram_id:'12345678'},canonical=JSON.stringify(plain);
+ const signature=hmac(TOKEN,'FATIR-INTERNAL-V1:'+ts+':'+nonce+':'+canonical);
+ const payload={...plain,_fatir_auth:{ts,nonce,signature},_fatir_canonical:canonical};
+ const seen=new Set();
+ e.DB={prepare:()=>({bind:(nonce)=>({run:async()=>{
+  if(seen.has(nonce))throw Error('UNIQUE constraint');
+  seen.add(nonce);
+ }})})};
+ const r=await worker.fetch(request('/api/internal-workflow-verify',{payload}),e);
+ assert.equal(r.status,200);assert.equal((await r.json()).verified,true);
+ const replay=await worker.fetch(request('/api/internal-workflow-verify',{payload}),e);
+ assert.equal(replay.status,409);
+ const bad={...payload,_fatir_auth:{ts,nonce:'b'.repeat(36),signature:'0'.repeat(64)}};
+ const denied=await worker.fetch(request('/api/internal-workflow-verify',{payload:bad}),e);
+ assert.equal(denied.status,401);
+});
