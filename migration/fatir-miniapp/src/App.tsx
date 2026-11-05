@@ -42,7 +42,7 @@ const statuses:Record<string,{label:string;className:string}>={
   REJECTED:{label:'Отклонена',className:'danger'},
   CANCELLED:{label:'Отменена',className:'danger'},
 };
-const key=()=>crypto.randomUUID().replaceAll('-','');
+const key=()=>crypto.randomUUID().replace(/-/g,'');
 const firstLine=():Line=>({key:key(),productCode:'',quantity:1,plant:''});
 const stored=(name:string)=>{try{return sessionStorage.getItem(name)||''}catch{return ''}};
 const remember=(name:string,val:string|null)=>{try{val===null?sessionStorage.removeItem(name):sessionStorage.setItem(name,val)}catch{}};
