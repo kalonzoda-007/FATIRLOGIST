@@ -51,7 +51,7 @@ async function signedWorkflow(env,key,data) {
   const canonical=JSON.stringify(data);
   const signature=hex(await cryptoHmac(env.TELEGRAM_BOT_TOKEN,'FATIR-INTERNAL-V1:'+ts+':'+nonce+':'+canonical));
   const signed={...data,_fatir_auth:{ts,nonce,signature},_fatir_canonical:canonical};
-  const abort=new AbortController(), timeout=setTimeout(()=>abort.abort(),27000);
+  const abort=new AbortController(), timeout=setTimeout(()=>abort.abort(),65000);
   try {
     const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(signed),signal:abort.signal});
