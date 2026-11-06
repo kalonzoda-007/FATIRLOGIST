@@ -76,6 +76,7 @@ export default function App(){
   const [result,setResult]=useState<Result|null>(()=>stored('fatir.pending')?{pending:true,requestId:stored('fatir.pending')}:null);
   const [busy,setBusy]=useState(false);
   const [errorText,setErrorText]=useState('');
+  const [validationNotice,setValidationNotice]=useState('');
   const [pollError,setPollError]=useState('');
   const [orders,setOrders]=useState<Order[]>([]);
   const [orderSearch,setOrderSearch]=useState('');
@@ -149,7 +150,7 @@ export default function App(){
   const totalWeight=lines.reduce((sum,l)=>sum+(products.find(p=>p.code===l.productCode)?.weight||0)*(Number(l.quantity)||0),0);
   const updateLine=(id:string,patch:Partial<Line>)=>setLines(arr=>arr.map(l=>l.key===id?{...l,...patch}:l));
   const submit=async()=>{
-    haptic();setErrorText('');
+    haptic();setErrorText('');setValidationNotice('');
     if(!clientId&&!clientName.trim()){setErrorText('Выберите клиента или заполните имя нового.');return}
     if(!city.trim()||!deliveryDate){setErrorText('Укажите город и дату отгрузки.');return}
     if(!lines.length||lines.some(x=>!x.productCode||!x.plant||!Number.isSafeInteger(Number(x.quantity))||x.quantity<1)){
@@ -157,10 +158,10 @@ export default function App(){
     }
     setBusy(true);
     try{
-      const d=await post('/api/orders',{requestId,clientId,clientName,region,city,address,deliveryDate,deliveryType,notes,
+      const d=await post('/api/orders/validate',{requestId,clientId,clientName,region,city,address,deliveryDate,deliveryType,notes,
         items:lines.map(({productCode,quantity,plant})=>({productCode,quantity,plant}))});
-      if(!d.accepted)throw Error('Сервер не подтвердил приём заявки');
-      remember('fatir.pending',requestId);setResult({pending:true,requestId});
+      if(!d.ok || !d.dryRun || d.saved!==false)throw Error('Сервер не подтвердил безопасную проверку');
+      setValidationNotice('Проверено: '+String(d.totalBags)+' меш., '+String(d.totalWeightKg)+' кг. Данные не отправлены и заказ не создан.');
     }catch(e:any){setErrorText(e?.response?.data?.error||e?.message||'Не удалось сохранить заявку')}
     finally{setBusy(false)}
   };
@@ -318,9 +319,10 @@ export default function App(){
               onChange={e=>setNotes(e.target.value)} placeholder="Уточнения, автомобиль клиента, пожелания..." maxLength={400}/></div>
           </section>
           {errorText&&<Warning>{errorText}</Warning>}
+          {validationNotice&&<div className="notice-success">{ico('check-circle-linear',18)} {validationNotice}</div>}
           <div className="submit-row"><p>{ico('shield-check-linear',17)} Только авторизованные заявки</p>
-            <button type="button" className="btn-primary" disabled={busy || !products.length || true} title="Тестовый режим: создание заявок временно отключено" onClick={submit}>
-              {'Отправка отключена — тестовый режим'} {ico('arrow-right-up-linear',19)}</button></div>
+            <button type="button" className="btn-primary" disabled={busy||!products.length} title="Проверить форму без создания заказа и изменения Google Sheets" onClick={submit}>
+              {busy?'Проверяем форму…':'Проверить заявку (без отправки)'} {ico('arrow-right-up-linear',19)}</button></div>
         </div>
         <aside className="summary-column"><div className="summary-card glass-card">
           <div className="summary-head">{ico('clipboard-list-linear',21)}<span>Обзор заказа</span></div>
