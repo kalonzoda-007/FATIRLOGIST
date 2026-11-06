@@ -235,3 +235,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .dialog-card strong{color:#34583a}
 .dialog-buttons{display:flex;justify-content:flex-end;gap:10px;margin-top:24px;flex-wrap:wrap}
 @media(max-width:620px){.dialog-card{padding:25px 19px}.dialog-buttons{flex-direction:column}.dialog-buttons>button{width:100%}}
+
+/* Staging safety banner: never imply production writes are enabled. */
+.migration-warning{position:relative;z-index:30;max-width:1080px;margin:12px auto 0;padding:11px 16px;border-radius:14px;border:1px solid #b38a32;background:#fff6d6;color:#55420f;font-size:13px;font-weight:700;line-height:1.45;box-shadow:0 6px 20px rgba(64,46,10,.08)}
+@media(max-width:700px){.migration-warning{margin:8px 10px 0;font-size:12px;padding:10px}}
