@@ -120,6 +120,11 @@ export default {
       const result=await verifySignedWorkflow(body,env);
       return respond(result,result.ok?200:result.error==='REPLAYED_WORKFLOW_REQUEST'?409:result.error==='NONCE_STORE_UNAVAILABLE'?503:401,'');
     }
+    // Staging is READ ONLY. Prevent writes to live n8n/Google Sheets until full cutover.
+    // Validate the request locally; no creation or mutation is triggered here.
+    if(url.pathname==='/api/orders'){
+      return fail('Тестовый режим FATIR: создание заявок временно отключено до завершения миграции. Данные не отправлены.',503,origin);
+    }
     try {
       const {actor,catalog,role}=await authorize(body,env);
       if(url.pathname==='/api/bootstrap')
