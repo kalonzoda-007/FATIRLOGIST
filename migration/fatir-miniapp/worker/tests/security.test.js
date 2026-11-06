@@ -83,3 +83,33 @@ test('staging never submits a real order to n8n',async()=>{
   assert.equal(called,0);
  }finally{globalThis.fetch=original}
 });
+
+test('authorized dry-run validates order without invoking submit webhook',async()=>{
+ const original=globalThis.fetch; let requests=0;
+ try {
+  globalThis.fetch=async(url)=>{
+   requests++;
+   if(String(url)!=='https://example.invalid/bootstrap')throw Error('STAGING_MUST_NOT_WRITE');
+   return new Response(JSON.stringify({ok:true,user:{id:'12345678',role:'applicant'},products:[{code:'SKU-000001',name:'Мука',weight:50}],clients:[]}),{status:200});
+  };
+  const input={initData:telegramData(),requestId:'preview-request-0001',clientName:'Тестовый клиент',
+    city:'Худжанд',region:'Согдийская область',deliveryDate:'2026-11-09',
+    items:[{productCode:'SKU-000001',quantity:3,plant:'PL-AGR'}]};
+  const res=await worker.fetch(request('/api/orders/validate',input),env());
+  assert.equal(res.status,200);
+  const output=await res.json();
+  assert.equal(output.dryRun,true);assert.equal(output.saved,false);
+  assert.equal(output.totalBags,3);assert.equal(output.totalWeightKg,150);
+  assert.equal(requests,1);
+ } finally {globalThis.fetch=original}
+});
+test('dry-run refuses products not in trusted Google catalog',async()=>{
+ const original=globalThis.fetch;
+ try {
+  globalThis.fetch=async()=>new Response(JSON.stringify({ok:true,user:{id:'12345678',role:'applicant'},products:[],clients:[]}),{status:200});
+  const res=await worker.fetch(request('/api/orders/validate',{
+   initData:telegramData(),requestId:'preview-request-0002',clientName:'Тест',city:'Худжанд',deliveryDate:'2026-11-09',
+   items:[{productCode:'SKU-000001',quantity:3,plant:'PL-AGR'}]}),env());
+  assert.equal(res.status,400);
+ } finally {globalThis.fetch=original}
+});
