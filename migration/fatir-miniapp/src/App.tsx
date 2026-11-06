@@ -319,7 +319,7 @@ export default function App(){
           </section>
           {errorText&&<Warning>{errorText}</Warning>}
           <div className="submit-row"><p>{ico('shield-check-linear',17)} Только авторизованные заявки</p>
-            <button type="button" className="btn-primary" disabled={true} title="Тестовый режим: создание заявок временно отключено" onClick={submit}>
+            <button type="button" className="btn-primary" disabled={busy || !products.length || true} title="Тестовый режим: создание заявок временно отключено" onClick={submit}>
               {'Отправка отключена — тестовый режим'} {ico('arrow-right-up-linear',19)}</button></div>
         </div>
         <aside className="summary-column"><div className="summary-card glass-card">
