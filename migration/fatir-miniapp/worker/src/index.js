@@ -130,6 +130,26 @@ export default {
       if(url.pathname==='/api/bootstrap')
         return respond({user:{id:actor.id,name:actor.name||catalog.user.name,role},
           products:catalog.products||[],clients:catalog.clients||[]},200,origin);
+      if(url.pathname==='/api/orders/validate') {
+        const req=text(body.requestId,100);
+        const date=text(body.deliveryDate,30);
+        if(!validRequest(req)||!/^\d{4}-\d{2}-\d{2}$/.test(date))
+          return fail('Проверьте идентификатор заявки и дату отгрузки',400,origin);
+        let clientName=text(body.clientName),region=text(body.region),city=text(body.city);
+        if(body.clientId){
+          const client=(catalog.clients||[]).find(x=>x.code===body.clientId);
+          if(!client)return fail('Клиент отсутствует в базе',400,origin);
+          clientName=client.name;region ||= client.region;city ||= client.city;
+        }
+        if(!clientName||!city)return fail('Укажите клиента и город',400,origin);
+        const items=itemRows(body.items,catalog.products||[]);
+        const totalBags=items.reduce((sum,i)=>sum+i.quantity,0);
+        const totalWeightKg=items.reduce((sum,i)=>sum+i.quantity*Number((catalog.products||[]).find(x=>x.code===i.productCode)?.weight||0),0);
+        return respond({ok:true,dryRun:true,saved:false,requestId:req,
+          clientName,region,city,deliveryDate:date,itemsCount:items.length,
+          totalBags,totalWeightKg,
+          message:'Форма проверена. Заказ не создан, Google Sheets не изменены.'},200,origin);
+      }
       if(url.pathname==='/api/orders'){
         const req=text(body.requestId,100);
         if(!validRequest(req)||!/^\d{4}-\d{2}-\d{2}$/.test(text(body.deliveryDate)))
