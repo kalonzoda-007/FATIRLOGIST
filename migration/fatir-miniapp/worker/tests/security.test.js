@@ -68,3 +68,18 @@ test('HMAC verifier rejects bad signature and replay with unique D1 nonce',async
  const denied=await worker.fetch(request('/api/internal-workflow-verify',{payload:bad}),e);
  assert.equal(denied.status,401);
 });
+
+test('staging never submits a real order to n8n',async()=>{
+ const original=globalThis.fetch;
+ try {
+  let called=0;
+  globalThis.fetch=async()=>{called++;throw Error('MUST_NOT_REACH_N8N')};
+  const r=await worker.fetch(request('/api/orders',{
+   initData:telegramData(),requestId:'test-request-0001',
+   clientName:'Тест',city:'Худжанд',deliveryDate:'2026-11-08',
+   items:[{productCode:'SKU-000001',quantity:1,plant:'PL-AGR'}]
+  }),env());
+  assert.equal(r.status,503);
+  assert.equal(called,0);
+ }finally{globalThis.fetch=original}
+});
