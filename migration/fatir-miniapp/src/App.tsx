@@ -226,6 +226,7 @@ export default function App(){
 
   return <div className="shell">
     <div className="ambient a1"/><div className="ambient a2"/><div className="ambient a3"/>
+    <div className="migration-warning" role="status">🧪 ТЕСТОВАЯ ВЕРСИЯ FATIR — просмотр заказов. Создание заявок и согласования отключены до завершения безопасного переноса истории.</div>
     <header className="site-header">
       <div className="header-inner glass-surface">
         <div className="brand" onClick={()=>setView('new')} role="button" tabIndex={0}>
@@ -318,8 +319,8 @@ export default function App(){
           </section>
           {errorText&&<Warning>{errorText}</Warning>}
           <div className="submit-row"><p>{ico('shield-check-linear',17)} Только авторизованные заявки</p>
-            <button type="button" className="btn-primary" disabled={busy||!products.length} onClick={submit}>
-              {busy?'Отправка…':'Отправить заявку'} {ico('arrow-right-up-linear',19)}</button></div>
+            <button type="button" className="btn-primary" disabled={true} title="Тестовый режим: создание заявок временно отключено" onClick={submit}>
+              {'Отправка отключена — тестовый режим'} {ico('arrow-right-up-linear',19)}</button></div>
         </div>
         <aside className="summary-column"><div className="summary-card glass-card">
           <div className="summary-head">{ico('clipboard-list-linear',21)}<span>Обзор заказа</span></div>
