@@ -17,10 +17,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: source
-      - name: Checkout existing Pages branch (preserve all original files)
+      - name: Checkout actual GitHub Pages branch (preserve all original files)
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: gh-pages
           path: site
           fetch-depth: 1
       - uses: actions/setup-node@v4
@@ -49,5 +49,5 @@ jobs:
           git add migration-preview/
           if ! git diff --cached --quiet; then
             git commit -m "Publish independent FATIR Telegram staging preview"
-            git push origin HEAD:master
+            git push origin HEAD:gh-pages
           fi
