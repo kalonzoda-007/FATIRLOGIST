@@ -30,7 +30,7 @@ type RecordEvent = {
  id:string;kind:string;createdAt:string;actorId:string;actorName:string;role:string;
  text:string;status?:string;reason?:string;items?:OrderLine[];decidedBy?:string;decisionNote?:string;decidedAt?:string;
 };
-type Detail = {order:Order;items:OrderLine[];timeline:RecordEvent[];canEdit:boolean;isRequester:boolean};
+type Detail = {order:Order;items:OrderLine[];timeline:RecordEvent[];canEdit:boolean;isRequester:boolean;migrationNotice?:string};
 type Result = {pending?:boolean;requestId?:string;orderId?:string;clientId?:string;status?:string;requiresReview?:boolean};
 const PLANTS=[{code:'PL-AGR',name:'Агро'},{code:'PL-ALN',name:'Альянс'},{code:'PL-GLS',name:'Гулистан'}];
 const REGIONS=['Согдийская область','Душанбе','Хатлонская область','ГБАО'];
@@ -385,7 +385,7 @@ export default function App(){
             </div>
             <div className="desk-section"><div className="desk-title"><div>{ico('chat-line-linear',21)}<h3>Обсуждение и история</h3></div><span>{detail.timeline.length} событий</span></div>
               {!detail.timeline.length&&<div className="conversation-empty">{ico('chat-round-dots-linear',24)}
-                <p>Пока нет сообщений. Логист может запросить уточнение или предложить корректировку.</p></div>}
+                <p>{detail.migrationNotice || 'Пока нет сообщений. История обсуждений ещё не подтверждена.'}</p></div>}
               <div className="timeline">{detail.timeline.map(ev=><div className={'message '+(ev.actorId===user?.id?'mine':'')} key={ev.id}>
                 <div className="message-avatar">{ev.actorName?.charAt(0)||'F'}</div><div className="message-body">
                   <div className="message-meta"><b>{ev.actorName||ev.role}</b><span>{fmtTime(ev.createdAt)}</span></div>
