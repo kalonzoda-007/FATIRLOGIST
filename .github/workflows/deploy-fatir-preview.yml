@@ -1,0 +1,53 @@
+name: Publish FATIR Telegram migration preview (separate path)
+on:
+  push:
+    branches:
+      - migration/telegram-cloudflare-20261105
+    paths:
+      - 'migration/fatir-miniapp/**'
+      - '.github/workflows/deploy-fatir-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          path: source
+      - name: Checkout existing Pages branch (preserve all original files)
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          path: site
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build staging React app
+        working-directory: source/migration/fatir-miniapp
+        env:
+          VITE_API_BASE_URL: https://fatir-miniapp-migration.kalonzoda007.workers.dev
+        run: |
+          npm install
+          npm run build
+          npx tsc --noEmit
+      - name: Copy build under isolated preview URL
+        run: |
+          mkdir -p site/migration-preview
+          rm -rf site/migration-preview/assets
+          cp -a source/migration/fatir-miniapp/dist/. site/migration-preview/
+          test -f site/migration-preview/index.html
+          test -d site/migration-preview/assets
+      - name: Publish preview without overwriting existing Pages root
+        working-directory: site
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add migration-preview/
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish independent FATIR Telegram staging preview"
+            git push origin HEAD:master
+          fi
