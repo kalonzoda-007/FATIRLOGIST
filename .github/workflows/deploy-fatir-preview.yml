@@ -34,20 +34,32 @@ jobs:
           npm install
           npm run build
           npx tsc --noEmit
-      - name: Copy build under isolated preview URL
-        run: |
-          mkdir -p site/migration-preview
-          rm -rf site/migration-preview/assets
-          cp -a source/migration/fatir-miniapp/dist/. site/migration-preview/
-          test -f site/migration-preview/index.html
-          test -d site/migration-preview/assets
       - name: Publish preview without overwriting existing Pages root
         working-directory: site
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add migration-preview/
-          if ! git diff --cached --quiet; then
+          # A concurrent Pages commit may change gh-pages while this build runs.
+          # Refresh from the latest branch and replace ONLY the staging folder.
+          for attempt in 1 2 3 4 5; do
+            git fetch origin gh-pages
+            git reset --hard origin/gh-pages
+            mkdir -p migration-preview
+            rm -rf migration-preview/assets
+            cp -a ../source/migration/fatir-miniapp/dist/. migration-preview/
+            test -f migration-preview/index.html
+            test -d migration-preview/assets
+            git add migration-preview/
+            if git diff --cached --quiet; then
+              echo "Preview already up to date"
+              exit 0
+            fi
             git commit -m "Publish independent FATIR Telegram staging preview"
-            git push origin HEAD:gh-pages
-          fi
+            if git push origin HEAD:gh-pages; then
+              exit 0
+            fi
+            echo "Concurrent Pages update; retrying..."
+            sleep 2
+          done
+          echo "Failed to publish preview after retries" >&2
+          exit 1
