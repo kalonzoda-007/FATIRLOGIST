@@ -21,7 +21,7 @@ function OneCopy({data,copy}:{data:PassData;copy:'ОХРАНА'|'КЛИЕНТ'})
  const items=data.items.filter(x=>x.name&&Number(x.quantity)>0);
  return <article className={'rp-copy'+(data.demo?' rp-demo':'')}>
    <div className="rp-title">Экземпляр для {copy==='ОХРАНА'?'охраны':'клиента'}</div>
-   <div className="rp-meta"><strong>Рухсатнома № {data.passNo||data.orderId}</strong><strong>Лента {data.waybillNo||'________'}</strong></div>
+   <div className="rp-meta"><strong>Рухсатнома № _________</strong><strong>Лента _________</strong></div>
    <div className="rp-company">Фатир Агро</div>
    <div className="rp-details">
      <Cell label="Сана / Дата:" value={dateOnly(data.createdAt)}/>
@@ -41,7 +41,8 @@ function OneCopy({data,copy}:{data:PassData;copy:'ОХРАНА'|'КЛИЕНТ'})
    <div className="rp-qty">Миқдори умумӣ / Всего мешков: <strong>{fmt(data.totalBags)}</strong> · Дата отгрузки: <strong>{dateOnly(data.deliveryDate)}</strong></div>
    <div className="rp-sign">Мудири анбор / Кладовщик <span>________________</span> Имзо <span>________</span></div>
    <div className="rp-sign">Муҳофиза / Охрана <span>________________</span> Имзо <span>________</span></div>
-   <div className="rp-sign">Ронанда / Водитель <span>________________</span> Имзо <span>________</span></div>
+   <div className="rp-sign">Ронанда / Водитель (Ф.И.О.) <span>________________</span> Имзо <span>________</span></div>
+   <div className="rp-sign">Навбатдори хазина / Дежурный кассир (Ф.И.О.) <span>________________</span> Имзо <span>________</span></div>
    {data.demo&&<div className="rp-watermark">ОБРАЗЕЦ</div>}
    <div className="rp-footer">{data.demo?'НЕ ДЕЙСТВИТЕЛЕН':'Печать не подтверждает разрешение на въезд или отпуск товара'}</div>
  </article>;
