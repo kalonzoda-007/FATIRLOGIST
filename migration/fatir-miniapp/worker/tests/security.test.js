@@ -113,3 +113,31 @@ test('dry-run refuses products not in trusted Google catalog',async()=>{
   assert.equal(res.status,400);
  } finally {globalThis.fetch=original}
 });
+
+test('signed pickup order forwards driver details only when submission is enabled',async()=>{
+ const original=globalThis.fetch;
+ const calls=[];
+ try{
+  globalThis.fetch=async(url,opts)=>{
+   calls.push({url:String(url),body:JSON.parse(opts.body)});
+   if(String(url)==='https://example.invalid/bootstrap')
+     return new Response(JSON.stringify({ok:true,user:{id:'12345678',role:'applicant'},products:[{code:'SKU-000001',name:'Мука',weight:50}],clients:[]}),{status:200});
+   if(String(url)==='https://example.invalid/submit')
+     return new Response(JSON.stringify({ok:true,message:'Workflow was started'}),{status:200});
+   throw Error('UNEXPECTED_ENDPOINT');
+  };
+  const r=await worker.fetch(request('/api/orders',{
+    initData:telegramData(),requestId:'preview-request-20261110-0002',clientName:'Тестовый клиент',
+    city:'Худжанд',deliveryDate:'2026-11-12',deliveryType:'Самовывоз',
+    driverName:'Пример Водителя',driverPhone:'+992 900 000 001',
+    vehiclePlate:'4488wa01',vehicleBrand:'Mercedes',vehicleBody:'Фургон',
+    items:[{productCode:'SKU-000001',quantity:3,plant:'PL-AGR'}]
+   }),env({SUBMIT_ENABLED:'true'}));
+   assert.equal(r.status,200);assert.equal((await r.json()).pending,true);
+   assert.equal(calls.length,2);
+   assert.equal(calls[1].body.driverName,'Пример Водителя');
+   assert.equal(calls[1].body.vehiclePlate,'4488WA01');
+   assert.equal(calls[1].body.items[0].quantity,3);
+   assert.equal(typeof calls[1].body._fatir_auth.signature,'string');
+ }finally{globalThis.fetch=original}
+});
