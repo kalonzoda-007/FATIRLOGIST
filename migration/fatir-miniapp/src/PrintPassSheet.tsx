@@ -5,6 +5,7 @@ export type PassData={
   orderId:string;client:string;destination:string;deliveryDate:string;createdAt:string;
   driver?:string;vehicle?:string;vehicleBrand?:string;vehicleBody?:string;
   driverPhone?:string;passNo?:string;waybillNo?:string;
+  warehouseClerkName?:string;cashierName?:string;logisticName?:string;
   totalBags:number;totalWeightKg:number;items:PassItem[];status?:string;demo?:boolean;
 };
 const fmt=(v:number)=>Number(v||0).toLocaleString('ru-RU');
@@ -26,11 +27,11 @@ function OneCopy({data,copy}:{data:PassData;copy:'ОХРАНА'|'КЛИЕНТ'})
    <div className="rp-details">
      <Cell label="Сана / Дата:" value={dateOnly(data.createdAt)}/>
      <Cell label="№ а/м:" value={data.vehicle}/>
-     <Cell label="Ба кӣ / Клиент:" value={data.client}/>
+     <Cell label="Ба кӣ / Клиент (Ф.И.О.):" value={data.client}/>
      <Cell label="Тамға а/м:" value={data.vehicleBrand}/>
-     <Cell label="Ба вос. кӣ / Водитель:" value={data.driver}/>
+     <Cell label="Ба вос. кӣ / Водитель (Ф.И.О.):" value={data.driver}/>
      <Cell label="Тип кузова:" value={data.vehicleBody}/>
-     <div className="rp-cell rp-wide"><span>Тел. водителя:</span><strong>{display(data.driverPhone)}</strong></div>
+     <div className="rp-cell rp-wide"><span>Тел. водителя / Рақами ронанда:</span><strong>{display(data.driverPhone)}</strong></div>
    </div>
    <table className="rp-products">
      <colgroup><col style={{width:'7%'}}/><col style={{width:'43%'}}/><col style={{width:'18%'}}/><col style={{width:'14%'}}/><col style={{width:'18%'}}/></colgroup>
@@ -39,10 +40,11 @@ function OneCopy({data,copy}:{data:PassData;copy:'ОХРАНА'|'КЛИЕНТ'})
      <tfoot><tr><th colSpan={4}>Ҳамагӣ нетто / Итого нетто</th><th>{fmt(data.totalWeightKg)}</th></tr></tfoot>
    </table>
    <div className="rp-qty">Миқдори умумӣ / Всего мешков: <strong>{fmt(data.totalBags)}</strong> · Дата отгрузки: <strong>{dateOnly(data.deliveryDate)}</strong></div>
-   <div className="rp-sign">Мудири анбор / Кладовщик <span>________________</span> Имзо <span>________</span></div>
+   <div className="rp-sign">Анбордор / Кладовщик (Ф.И.О.) <span>{display(data.warehouseClerkName)}</span> Имзо <span>________</span></div>
    <div className="rp-sign">Муҳофиза / Охрана <span>________________</span> Имзо <span>________</span></div>
-   <div className="rp-sign">Ронанда / Водитель (Ф.И.О.) <span>________________</span> Имзо <span>________</span></div>
-   <div className="rp-sign">Навбатдори хазина / Дежурный кассир (Ф.И.О.) <span>________________</span> Имзо <span>________</span></div>
+   <div className="rp-sign">Ронанда / Водитель (Ф.И.О.) <span>{display(data.driver)}</span> Имзо <span>________</span></div>
+   <div className="rp-sign">Навбатдори хазина / Кассир (Ф.И.О.) <span>{display(data.cashierName)}</span> Имзо <span>________</span></div>
+   <div className="rp-sign">Логист / Логист (Ф.И.О.) <span>{display(data.logisticName)}</span> Имзо <span>________</span></div>
    {data.demo&&<div className="rp-watermark">ОБРАЗЕЦ</div>}
    <div className="rp-footer">{data.demo?'НЕ ДЕЙСТВИТЕЛЕН':'Печать не подтверждает разрешение на въезд или отпуск товара'}</div>
  </article>;
