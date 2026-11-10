@@ -82,6 +82,8 @@ export default function App(){
   const [printPasses,setPrintPasses]=useState<PassData[]>([]);
   const [printKey,setPrintKey]=useState(0);
   const [printError,setPrintError]=useState('');
+  const [batchIds,setBatchIds]=useState<string[]>([]);
+  const [batchBusy,setBatchBusy]=useState(false);
   const lastPrintedId=useRef('');
   const [orders,setOrders]=useState<Order[]>([]);
   const [orderSearch,setOrderSearch]=useState('');
@@ -180,6 +182,29 @@ export default function App(){
       demo:true,status:'DEMO'
     };
     openPrintSheet([pass]);
+  };
+  const togglePassOrder=(id:string)=>{
+    setBatchIds(current=>current.includes(id)?current.filter(x=>x!==id):current.length<3?[...current,id]:current);
+  };
+  const printSelectedPasses=async()=>{
+    if(!batchIds.length||batchIds.length>3)return;
+    setBatchBusy(true);setDiscussionError('');
+    try{
+      const selectedOrders=await Promise.all(batchIds.map(async id=>{
+        const d=await post('/api/discussions/get',{orderId:id}) as Detail;
+        if(d.order?.orderId!==id)throw Error('Номер ORD не подтверждён: '+id);
+        return d;
+      }));
+      openPrintSheet(selectedOrders.map(d=>({
+        orderId:d.order.orderId,client:d.order.clientName,
+        destination:[d.order.region,d.order.city].filter(Boolean).join(', '),
+        deliveryDate:d.order.deliveryDate,createdAt:new Date().toISOString(),
+        totalBags:d.order.totalBags,totalWeightKg:d.order.totalWeightKg,
+        items:d.items.map(x=>({name:x.productName,quantity:x.quantity,plant:x.plant,weightKg:x.quantity*x.unitWeight})),
+        status:d.order.status
+      })));
+    }catch(e:any){setDiscussionError(e?.response?.data?.error||e?.message||'Не удалось проверить заявки перед печатью')}
+    finally{setBatchBusy(false)}
   };
   const loadOrders=useCallback(async()=>{
     setListBusy(true);setDiscussionError('');
@@ -401,6 +426,20 @@ export default function App(){
           <div className="filters">
             {[['ALL','Все'],['DISCUSSION','Обсуждение'],['NEEDS_REVIEW','Проверить'],['DRAFT','Новые']].map(([val,label])=>
               <button key={val} className={filter===val?'on':''} onClick={()=>setFilter(val)}>{label}</button>)}
+          </div>
+          <div className="pass-batch-selector">
+            <div className="pass-batch-title">Печать на A4 · до 3 пропусков, по 2 копии</div>
+            <div className="pass-batch-picks">
+              {allFiltered.slice(0,40).map(o=><label key={o.orderId} className="pass-batch-choice">
+                <input type="checkbox" checked={batchIds.includes(o.orderId)}
+                  disabled={!batchIds.includes(o.orderId)&&batchIds.length>=3}
+                  onChange={()=>togglePassOrder(o.orderId)}/>
+                <span>{o.orderId}</span>
+              </label>)}
+            </div>
+            <button type="button" className="btn-light pass-batch-go" disabled={!batchIds.length||batchBusy}
+              onClick={printSelectedPasses}>{ico('printer-linear',16)}
+              {batchBusy?'Проверяем заказы…':'Печать выбранных ('+batchIds.length+'/3)'}</button>
           </div>
           <div className="queue-list">
             {listBusy&&<div className="queue-empty">Обновляем список…</div>}
