@@ -149,8 +149,8 @@ export default {
           vehicleBrand:text(pickup?body.vehicleBrand:'',80),
           vehicleBody:text(pickup?body.vehicleBody:'',80)
         };
-        if(Object.values(fields).some(v=>/[<>\\x00-\\x1f]/.test(v))||
-           (fields.driverPhone&&!/^\\+?[0-9()\\s-]{6,30}$/.test(fields.driverPhone)))
+        if(Object.values(fields).some(v=>/[<>\x00-\x1f]/.test(v))||
+           (fields.driverPhone&&!/^\+?[0-9()\s-]{6,30}$/.test(fields.driverPhone)))
           return fail('Проверьте данные водителя и номер телефона',400,origin);
         const items=itemRows(body.items,catalog.products||[]);
         const totalBags=items.reduce((sum,i)=>sum+i.quantity,0);
@@ -180,8 +180,8 @@ export default {
           vehicleBrand:text(pickup?body.vehicleBrand:'',80),
           vehicleBody:text(pickup?body.vehicleBody:'',80)
         };
-        if(Object.values(fields).some(v=>/[<>\\x00-\\x1f]/.test(v))||
-           (fields.driverPhone&&!/^\\+?[0-9()\\s-]{6,30}$/.test(fields.driverPhone)))
+        if(Object.values(fields).some(v=>/[<>\x00-\x1f]/.test(v))||
+           (fields.driverPhone&&!/^\+?[0-9()\s-]{6,30}$/.test(fields.driverPhone)))
           return fail('Проверьте данные водителя',400,origin);
         const items=itemRows(body.items,catalog.products||[]);
         const accepted=await signedWorkflow(env,'SUBMIT',{telegram_id:actor.id,request_id:req,clientName,region,city,
