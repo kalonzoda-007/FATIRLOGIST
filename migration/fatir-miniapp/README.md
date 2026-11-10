@@ -36,3 +36,14 @@ The original Vite base './' supports GitHub project Pages.
 3. Validate positive and negative Telegram login, roles, ownership isolation and replay protection.
 4. Test new order creation only with an isolated test sheet or controlled test row, not live production data by default.
 5. Verify full mobile Telegram UX and retain rollback before moving existing bot menu.
+
+## A4 gate-pass printing (2026-11-10)
+
+- UI implementation: src/PrintPassSheet.tsx and its print stylesheet in src/index.css.
+- Layout: one A4 portrait page with THREE horizontal pass positions. Every occupied position contains TWO side-by-side copies (security + warehouse). Three registered orders fill six copies per sheet.
+- Immediate print preparation is triggered only after the server returns a real ORD ID and an authorized /api/discussions/get read verifies that order and its items; NOT from an unconfirmed submission or local dry-run.
+- Browser window.print() is invoked after rendering. Manual Print/PDF remains available for browsers and Telegram webviews that do not auto-open native print.
+- In staging, 'Посмотреть образец пропуска A4 (2 копии)' creates a visibly watermarked sample without creating an order. In the orders inbox, select up to three existing authorized ORD IDs to print them together.
+- Template includes client, destination, product summary, bag quantity, total mass, dispatch date and signature lines. Driver/plate appear as blank fields because the current source does not persist them. The print footer explicitly states that entry/loading requires staff authorization.
+- The current staging backend still rejects production order creation. Therefore auto-print-after-submission is implemented but cannot be verified end-to-end until the real, safely migrated creation path is enabled. Do not enable staging orders just to test print.
+- For manual QA: print sample as A4 portrait at 100% scale; verify all 3 rows and 6 halves fit without overlap; repeat on Android Telegram WebView because built-in printing can vary by OS.
