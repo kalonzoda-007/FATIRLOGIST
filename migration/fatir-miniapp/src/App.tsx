@@ -85,6 +85,7 @@ export default function App(){
   const [batchIds,setBatchIds]=useState<string[]>([]);
   const [batchBusy,setBatchBusy]=useState(false);
   const lastPrintedId=useRef('');
+  const botPrintRequested=useRef('');
   const [orders,setOrders]=useState<Order[]>([]);
   const [orderSearch,setOrderSearch]=useState('');
   const [filter,setFilter]=useState('ALL');
@@ -170,6 +171,18 @@ export default function App(){
     });
     return()=>{active=false};
   },[auth,result?.pending,result?.orderId,printRegisteredOrder]);
+  useEffect(()=>{
+    // Telegram's private web_app button opens this route. Query data is only
+    // a selector: server verifies Telegram signed initData and order ownership.
+    if(auth!=='ready')return;
+    const qs=new URLSearchParams(window.location.search);
+    const id=qs.get('print');
+    if(!id||!/^ORD-\d{4}-\d{6}$/.test(id)||botPrintRequested.current===id)return;
+    botPrintRequested.current=id;
+    printRegisteredOrder(id).catch((e)=>{
+      setPrintError(e?.response?.data?.error||e?.message||'Не удалось проверить право на печать пропуска');
+    });
+  },[auth,printRegisteredOrder]);
   const printDemo=()=>{
     const selectedClient=clients.find(x=>x.code===clientId);
     const pass:PassData={
@@ -302,7 +315,7 @@ export default function App(){
 
   return <div className="shell">
     <div className="ambient a1"/><div className="ambient a2"/><div className="ambient a3"/>
-    <div className="migration-warning" role="status">🧪 ТЕСТОВАЯ ВЕРСИЯ FATIR — просмотр заказов. Создание заявок и согласования отключены до завершения безопасного переноса истории.</div>
+    <div className="migration-warning" role="status">🧪 ТЕСТОВАЯ ВЕРСИЯ FATIR — просмотр и печать зарегистрированных заказов. Создание заявок и согласования отключены до завершения миграции.</div>
     <header className="site-header">
       <div className="header-inner glass-surface">
         <div className="brand" onClick={()=>setView('new')} role="button" tabIndex={0}>
