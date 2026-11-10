@@ -141,16 +141,6 @@ export default function App(){
     setPrintPasses(entries.slice(0,3));
     setPrintKey(x=>x+1);
   };
-  const registeredPass=(d:Detail):PassData=>({
-    orderId:d.order.orderId,client:d.order.clientName,
-    destination:[d.order.region,d.order.city].filter(Boolean).join(', '),
-    deliveryDate:d.order.deliveryDate,createdAt:new Date().toISOString(),
-    totalBags:d.order.totalBags,totalWeightKg:d.order.totalWeightKg,
-    items:d.items.map(item=>({
-      name:item.productName,quantity:item.quantity,plant:item.plant,
-      weightKg:item.unitWeight*item.quantity
-    })),status:d.order.status
-  });
   const printRegisteredOrder=useCallback(async(orderId:string)=>{
     if(!/^ORD-\\d{4}-\\d{6}$/.test(orderId))throw Error('Номер ORD не подтверждён');
     const d=await post('/api/discussions/get',{orderId}) as Detail;
