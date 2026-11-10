@@ -142,11 +142,23 @@ export default {
           clientName=client.name;region ||= client.region;city ||= client.city;
         }
         if(!clientName||!city)return fail('Укажите клиента и город',400,origin);
+        const pickup=body.deliveryType!=='Доставка';
+        const fields={
+          driverName:text(pickup?body.driverName:'',120),
+          driverPhone:text(pickup?body.driverPhone:'',30),
+          vehiclePlate:text(pickup?body.vehiclePlate:'',24).toUpperCase(),
+          vehicleBrand:text(pickup?body.vehicleBrand:'',80),
+          vehicleBody:text(pickup?body.vehicleBody:'',80)
+        };
+        if(Object.values(fields).some(v=>/[<>\\x00-\\x1f]/.test(v))||
+           (fields.driverPhone&&!/^\\+?[0-9()\\s-]{6,30}$/.test(fields.driverPhone)))
+          return fail('Проверьте данные водителя и номер телефона',400,origin);
         const items=itemRows(body.items,catalog.products||[]);
         const totalBags=items.reduce((sum,i)=>sum+i.quantity,0);
         const totalWeightKg=items.reduce((sum,i)=>sum+i.quantity*Number((catalog.products||[]).find(x=>x.code===i.productCode)?.weight||0),0);
         return respond({ok:true,dryRun:true,saved:false,requestId:req,
-          clientName,region,city,deliveryDate:date,itemsCount:items.length,
+          clientName,region,city,deliveryDate:date,deliveryType:pickup?'Самовывоз':'Доставка',
+          pickupDriver:fields,itemsCount:items.length,
           totalBags,totalWeightKg,
           message:'Форма проверена. Заказ не создан, Google Sheets не изменены.'},200,origin);
       }
