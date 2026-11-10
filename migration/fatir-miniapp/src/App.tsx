@@ -479,8 +479,9 @@ export default function App(){
           {validationNotice&&<div className="notice-success">{ico('check-circle-linear',18)} {validationNotice}</div>}
           <div className="pass-demo-actions"><button type="button" className="btn-light" onClick={printDemo}>{ico('printer-linear',18)} Посмотреть образец пропуска A4 (2 копии)</button><small>Образец с водяным знаком, не является пропуском на территорию</small></div>
           <div className="submit-row"><p>{ico('shield-check-linear',17)} Только авторизованные заявки</p>
-            <button type="button" className="btn-primary" disabled={busy||!products.length||true} title="Ожидается развёртывание безопасной серверной проверки" onClick={submit}>
-              {'Проверка заявки временно отключена'} {ico('arrow-right-up-linear',19)}</button></div>
+            <button type="button" className="btn-primary" disabled={busy||!products.length||!preparedLines.length}
+              title="Проверить заявку на защищённом сервере, не создавая ORD" onClick={submit}>
+              {busy?'Проверяем данные…':'Проверить заявку без отправки'} {ico('arrow-right-up-linear',19)}</button></div>
         </div>
         <aside className="summary-column"><div className="summary-card glass-card">
           <div className="summary-head">{ico('clipboard-list-linear',21)}<span>Обзор заказа</span></div>
