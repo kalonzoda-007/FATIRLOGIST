@@ -310,3 +310,42 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .pass-demo-actions small{max-width:250px;font-size:10px;color:#738474}
 .pass-demo-actions .btn-light{font-size:12px;display:inline-flex;align-items:center;gap:7px}
 @media print{.pass-batch-selector,.pass-demo-actions{display:none!important}}
+
+/* FATIR formal gate pass — security and client duplicate; variable item count */
+.rp-paper-preview{overflow-x:auto;background:#e2e5e1;padding:10px;border-radius:9px}
+.rp-a4{box-sizing:border-box;background:white;color:#050505;width:194mm;min-height:279mm;margin:0 auto;padding:0;font-family:"Times New Roman",serif;display:flex;flex-direction:column;gap:2mm}
+.rp-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border:1px solid black;break-inside:avoid;page-break-inside:avoid;min-height:91mm}
+.rp-copy{min-width:0;position:relative;display:flex;flex-direction:column;border-right:1px solid black;break-inside:avoid;page-break-inside:avoid;font-size:7.5pt;line-height:1.13}
+.rp-copy:last-child{border-right:0}
+.rp-title{text-align:center;font-size:11pt;font-weight:800;border-bottom:1px solid black;padding:1.1mm}
+.rp-meta{display:flex;justify-content:space-between;gap:2px;padding:1mm 2mm;font-size:8pt;border-bottom:1px solid black}
+.rp-company{font-size:11pt;font-weight:900;text-align:center;padding:.9mm;border-bottom:1px solid black}
+.rp-details{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+.rp-cell{display:flex;align-items:baseline;gap:1.2mm;min-width:0;padding:.9mm 1mm;border-bottom:1px solid #222;overflow-wrap:anywhere}
+.rp-cell:nth-child(odd):not(.rp-wide){border-right:1px solid black}
+.rp-cell span{font-size:6.5pt;font-weight:700;white-space:normal;flex:0 0 auto}
+.rp-cell strong{font-size:7pt;font-weight:500;min-width:0}
+.rp-wide{grid-column:span 2}
+.rp-products{border-collapse:collapse;width:100%;table-layout:fixed;margin:1mm 0 0;font-size:7.2pt}
+.rp-products th,.rp-products td{border:1px solid black;padding:.9mm .6mm;line-height:1.12;text-align:center;vertical-align:middle;word-break:break-word}
+.rp-products th:first-child,.rp-products td:first-child{border-left:0}
+.rp-products th:last-child,.rp-products td:last-child{border-right:0}
+.rp-products thead th{background:#f3f3f3;font-weight:800;font-size:6.7pt}
+.rp-products tbody td{height:5mm}
+.rp-products .rp-product-name{text-align:left;font-weight:600}
+.rp-products tfoot th{font-size:7pt;background:#f7f7f7}
+.rp-qty{font-size:7pt;padding:1mm;border-bottom:1px solid black}
+.rp-sign{display:flex;justify-content:space-between;align-items:baseline;gap:.5mm;flex-wrap:wrap;padding:.8mm 1mm;border-bottom:1px solid #333;font-size:6.5pt}
+.rp-sign span{flex:1;min-width:10mm;text-align:center}
+.rp-footer{font-size:5.6pt;text-align:center;padding:1mm;font-family:Arial,sans-serif;margin-top:auto}
+.rp-watermark{position:absolute;inset:auto 0 40%;text-align:center;transform:rotate(-19deg);font:bold 17pt Arial;color:#ac454545;pointer-events:none}
+.rp-print-only{display:none}
+@page{size:A4 portrait;margin:8mm}
+@media print{
+ .rp-print-only,.rp-print-only *{visibility:visible!important}
+ .rp-print-only{display:block!important;position:absolute!important;left:0!important;top:0!important;width:194mm!important;padding:0!important;margin:0!important}
+ .rp-print-only .rp-a4{width:194mm!important;min-height:0!important}
+ .rp-print-only .rp-pair{break-inside:avoid!important;page-break-inside:avoid!important}
+ .pass-preview-backdrop{display:none!important}
+ .rp-products thead th,.rp-products tfoot th{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
