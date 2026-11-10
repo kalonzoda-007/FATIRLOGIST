@@ -349,3 +349,26 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .pass-preview-backdrop{display:none!important}
  .rp-products thead th,.rp-products tfoot th{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 }
+
+/* FATIR dynamic goods entry and pickup-driver card — touch friendly */
+.product-auto-hint{display:flex;align-items:center;gap:8px;background:#eaf2e4;border:1px solid #d4e5cc;border-radius:11px;padding:11px 12px;font-size:11px;color:#36543b;font-weight:700;line-height:1.45;margin:9px 0 12px}
+.product-auto-hint svg{flex:none}
+.pickup-driver-panel{margin:18px 0 5px;padding:18px;border-radius:19px;border:1px solid rgba(107,127,91,.24);background:linear-gradient(135deg,rgba(240,246,234,.94),rgba(250,250,246,.85))}
+.pickup-driver-header{display:flex;gap:12px;align-items:flex-start;color:#476f4d}
+.pickup-driver-header svg{flex:none;margin-top:3px}
+.pickup-driver-header strong{font-weight:800;font-size:15px;color:#2E3A2F}
+.pickup-driver-header p{font-size:11px;line-height:1.55;color:#72836f;margin:5px 0 2px}
+.pickup-driver-panel .field{margin-top:13px}
+.pickup-driver-panel input,.pickup-driver-panel select{background:#fff}
+.line-card{transition:border-color .2s,box-shadow .2s}
+.line-card:focus-within{border-color:rgba(76,124,68,.48);box-shadow:0 0 0 3px rgba(109,145,93,.12)}
+.line-card .quantity-control input{min-width:70px}
+.line-card .quantity-control button{min-width:44px;min-height:44px}
+@media(max-width:680px){
+  .pickup-driver-panel{padding:14px 12px;margin-top:14px;border-radius:16px}
+  .pickup-driver-header strong{font-size:14px}
+  .pickup-driver-panel input,.pickup-driver-panel select{width:100%;min-height:46px;font-size:16px}
+  .line-card select,.line-card input{min-height:46px;font-size:16px}
+  .line-card .quantity-control button{min-width:46px;min-height:46px}
+  .product-auto-hint{font-size:10px}
+}
