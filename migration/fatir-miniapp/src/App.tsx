@@ -333,6 +333,7 @@ export default function App(){
       </div>
     </header>
     <main className="app-main">
+    {printError&&<Warning>{printError}</Warning>}
     {view==='new'?<>
       <section className="hero">
         <div className="hero-copy"><div className="overline"><span className="live-dot"/> FATIR / ORDER MANAGEMENT / 01</div>
