@@ -46,7 +46,7 @@ const statuses:Record<string,{label:string;className:string}>={
   CANCELLED:{label:'Отменена',className:'danger'},
 };
 const key=()=>crypto.randomUUID().replace(/-/g,'');
-const firstLine=():Line=>({key:key(),productCode:'',quantity:1,plant:''});
+const firstLine=():Line=>({key:key(),productCode:'',quantity:0,plant:''});
 const stored=(name:string)=>{try{return sessionStorage.getItem(name)||''}catch{return ''}};
 const remember=(name:string,val:string|null)=>{try{val===null?sessionStorage.removeItem(name):sessionStorage.setItem(name,val)}catch{}};
 const currentTjDate=()=>{const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dushanbe',day:'2-digit',month:'2-digit',year:'numeric'}).formatToParts(new Date());const part=(x:string)=>p.find(i=>i.type===x)?.value||'';return part('year')+'-'+part('month')+'-'+part('day')};
@@ -73,6 +73,11 @@ export default function App(){
   const [address,setAddress]=useState('');
   const [deliveryDate,setDeliveryDate]=useState(currentTjDate);
   const [deliveryType,setDeliveryType]=useState<'Самовывоз'|'Доставка'>('Самовывоз');
+  const [driverName,setDriverName]=useState('');
+  const [driverPhone,setDriverPhone]=useState('');
+  const [vehiclePlate,setVehiclePlate]=useState('');
+  const [vehicleBrand,setVehicleBrand]=useState('');
+  const [vehicleBody,setVehicleBody]=useState('');
   const [notes,setNotes]=useState('');
   const [lines,setLines]=useState<Line[]>([firstLine()]);
   const [requestId,setRequestId]=useState(()=>stored('fatir.pending')||key());
@@ -196,7 +201,8 @@ export default function App(){
       deliveryDate,createdAt:new Date().toISOString(),
       totalBags:lines.reduce((sum,x)=>sum+Number(x.quantity||0),0),
       totalWeightKg:lines.reduce((sum,x)=>sum+Number(x.quantity||0)*Number(products.find(p=>p.code===x.productCode)?.weight||0),0),
-      items:lines.map(x=>({name:products.find(p=>p.code===x.productCode)?.name||'Товар для образца',quantity:Number(x.quantity||0),plant:x.plant||''})),
+      items:validLines.map(x=>({name:products.find(p=>p.code===x.productCode)?.name||'Товар для образца',quantity:Number(x.quantity||0),plant:x.plant||''})),
+      driver:driverName,driverPhone,vehicle:vehiclePlate,vehicleBrand,vehicleBody,
       demo:true,status:'DEMO'
     };
     openPrintSheet([pass]);
@@ -244,24 +250,46 @@ export default function App(){
   useEffect(()=>{if(auth==='ready'&&view==='inbox'&&selected)loadDetail(selected)},[auth,view,selected,loadDetail]);
   const totalBags=lines.reduce((sum,l)=>sum+(Number(l.quantity)||0),0);
   const totalWeight=lines.reduce((sum,l)=>sum+(products.find(p=>p.code===l.productCode)?.weight||0)*(Number(l.quantity)||0),0);
-  const updateLine=(id:string,patch:Partial<Line>)=>setLines(arr=>arr.map(l=>l.key===id?{...l,...patch}:l));
+  const updateLine=(id:string,patch:Partial<Line>)=>setLines(arr=>{
+    const updated=arr.map(l=>l.key===id?{...l,...patch}:l);
+    const index=updated.findIndex(l=>l.key===id);
+    const last=updated[updated.length-1];
+    const quantityCommitted=Object.prototype.hasOwnProperty.call(patch,'quantity');
+    // A new product field appears after the final line has a product,
+    // plant and a positive quantity. Never add repeated empty lines.
+    if(index===updated.length-1&&quantityCommitted&&last.productCode&&last.plant&&
+       Number.isSafeInteger(last.quantity)&&last.quantity>0&&updated.length<30){
+      return [...updated,firstLine()];
+    }
+    return updated;
+  });
+  const preparedLines=lines.filter(l=>l.productCode||l.plant||l.quantity>0);
+  const validLines=preparedLines.filter(l=>l.productCode&&l.plant&&Number.isSafeInteger(l.quantity)&&l.quantity>0);
+  const addLine=()=>setLines(arr=>arr.length>=30||arr.some(l=>!l.productCode&&!l.plant&&l.quantity===0)?arr:[...arr,firstLine()]);
+  const dropLine=(id:string)=>setLines(arr=>{
+    const next=arr.filter(l=>l.key!==id);
+    return next.length?next:[firstLine()];
+  });
   const submit=async()=>{
     haptic();setErrorText('');setValidationNotice('');
     if(!clientId&&!clientName.trim()){setErrorText('Выберите клиента или заполните имя нового.');return}
     if(!city.trim()||!deliveryDate){setErrorText('Укажите город и дату отгрузки.');return}
-    if(!lines.length||lines.some(x=>!x.productCode||!x.plant||!Number.isSafeInteger(Number(x.quantity))||x.quantity<1)){
+    if(!preparedLines.length||validLines.length!==preparedLines.length){
       setErrorText('Проверьте товар, количество и завод для каждой позиции.');return;
     }
     setBusy(true);
     try{
       const d=await post('/api/orders/validate',{requestId,clientId,clientName,region,city,address,deliveryDate,deliveryType,notes,
-        items:lines.map(({productCode,quantity,plant})=>({productCode,quantity,plant}))});
+        driverName:deliveryType==='Самовывоз'?driverName.trim():'',driverPhone:deliveryType==='Самовывоз'?driverPhone.trim():'',
+        vehiclePlate:deliveryType==='Самовывоз'?vehiclePlate.trim().toUpperCase():'',
+        vehicleBrand:deliveryType==='Самовывоз'?vehicleBrand.trim():'',vehicleBody:deliveryType==='Самовывоз'?vehicleBody.trim():'',
+        items:validLines.map(({productCode,quantity,plant})=>({productCode,quantity,plant}))});
       if(!d.ok || !d.dryRun || d.saved!==false)throw Error('Сервер не подтвердил безопасную проверку');
       setValidationNotice('Проверено: '+String(d.totalBags)+' меш., '+String(d.totalWeightKg)+' кг. Данные не отправлены и заказ не создан.');
     }catch(e:any){setErrorText(e?.response?.data?.error||e?.message||'Не удалось сохранить заявку')}
     finally{setBusy(false)}
   };
-  const reset=()=>{remember('fatir.pending',null);setResult(null);setClientId('');setClientName('');setCity('');setAddress('');setLines([firstLine()]);setNotes('');setDeliveryType('Самовывоз');setRequestId(key())};
+  const reset=()=>{remember('fatir.pending',null);setResult(null);setClientId('');setClientName('');setCity('');setAddress('');setLines([firstLine()]);setNotes('');setDeliveryType('Самовывоз');setDriverName('');setDriverPhone('');setVehiclePlate('');setVehicleBrand('');setVehicleBody('');setRequestId(key())};
   const allFiltered=useMemo(()=>orders.filter(o=>(filter==='ALL'||o.status===filter)&&
     (o.orderId+' '+o.clientName+' '+o.city).toLowerCase().includes(orderSearch.toLowerCase())),[orders,filter,orderSearch]);
   const postAction=async(endpoint:string,payload:Record<string,unknown>)=>{
@@ -384,27 +412,30 @@ export default function App(){
             {lines.map((line,i)=>{
               const p=products.find(x=>x.code===line.productCode);
               return <div className="line-card" key={line.key}>
-                <div className="line-top"><span className="line-index">{String(i+1).padStart(2,'0')}</span><strong>Товарная позиция</strong>
+                <div className="line-top"><span className="line-index">{String(i+1).padStart(2,'0')}</span><strong>{line.productCode&&line.plant&&line.quantity>0?'Добавлен':'Выберите товар'}</strong>
                   <button type="button" className="icon-button danger-hover" title="Убрать позицию" disabled={lines.length===1}
-                   onClick={()=>setLines(ls=>ls.filter(x=>x.key!==line.key))}>{ico('trash-bin-trash-linear',18)}</button>
+                   onClick={()=>dropLine(line.key)}>{ico('trash-bin-trash-linear',18)}</button>
                 </div>
-                <div className="field"><label>Наименование товара</label>
-                  <select value={line.productCode} onChange={e=>updateLine(line.key,{productCode:e.target.value})}>
+                <div className="field"><label htmlFor={'product-'+line.key}>Наименование товара</label>
+                  <select id={'product-'+line.key} value={line.productCode} onChange={e=>updateLine(line.key,{productCode:e.target.value})}>
                   <option value="">Выберите товар из каталога</option>{products.map(p=><option key={p.code} value={p.code}>{p.name} · {p.code}</option>)}</select>
                 </div>
-                <div className="field-grid"><div className="field"><label>Завод</label><select value={line.plant}
+                <div className="field-grid"><div className="field"><label htmlFor={'plant-'+line.key}>Завод</label><select id={'plant-'+line.key} value={line.plant}
                   onChange={e=>updateLine(line.key,{plant:e.target.value})}><option value="">Выбрать завод</option>
                   {PLANTS.map(p=><option key={p.code} value={p.code}>{p.name}</option>)}</select></div>
-                  <div className="field"><label>Количество, мешков</label><div className="quantity-control">
-                    <button type="button" onClick={()=>updateLine(line.key,{quantity:Math.max(1,line.quantity-1)})}>{ico('minus-circle-linear',19)}</button>
-                    <input aria-label="Количество мешков" type="number" min={1} max={100000} value={line.quantity}
-                      onChange={e=>updateLine(line.key,{quantity:Number(e.target.value)})}/>
+                  <div className="field"><label htmlFor={'qty-'+line.key}>Количество, мешков</label><div className="quantity-control">
+                    <button type="button" onClick={()=>updateLine(line.key,{quantity:Math.max(0,line.quantity-1)})}>{ico('minus-circle-linear',19)}</button>
+                    <input id={'qty-'+line.key} aria-label={'Количество мешков, товар '+(i+1)} inputMode="numeric" type="number" min={1} max={100000}
+                      placeholder="0" value={line.quantity>0?line.quantity:''}
+                      onChange={e=>updateLine(line.key,{quantity:e.target.value===''?0:Number(e.target.value)})}/>
                     <button type="button" onClick={()=>updateLine(line.key,{quantity:line.quantity+1})}>{ico('add-circle-linear',19)}</button>
                   </div></div></div>
                 {p&&<div className="line-footer"><span>{p.weight} кг / мешок</span><b>{fmt(p.weight*line.quantity)} кг</b></div>}
               </div>
             })}
-            <button type="button" className="btn-dashed" onClick={()=>setLines(x=>[...x,firstLine()])}>{ico('add-circle-linear',20)} Добавить товар</button>
+            <div className="product-auto-hint">{ico('check-circle-linear',18)} Заполните товар, завод и количество — следующая позиция появится автоматически.</div>
+            <button type="button" className="btn-dashed" disabled={lines.length>=30}
+              onClick={addLine}>{ico('add-circle-linear',20)} {lines.length>=30?'Максимум 30 товаров':'Добавить товар вручную'}</button>
             <div className="total-strip"><div><span>Всего мешков</span><strong>{fmt(totalBags)}</strong></div>
               <div><span>Общая масса</span><strong>{fmt(totalWeight)} <small>кг</small></strong></div></div>
             <p className="notice-line">{ico('info-circle-linear',16)} Выбранный завод не означает резервирование. Остатки подтверждает склад.</p>
@@ -412,6 +443,33 @@ export default function App(){
           <section className="form-card glass-card">
             <div className="card-head"><div className="step-icon">{ico('delivery-linear',23)}</div><div><span className="step-label">ШАГ 03 / 03</span><h2>Отгрузка</h2><p>Условия получения и дополнительные сведения</p></div></div>
             <div className="field"><label>Способ получения</label>{deliveryLabels}</div>
+            {deliveryType==='Самовывоз'&&<div className="pickup-driver-panel">
+              <div className="pickup-driver-header">{ico('steering-wheel-linear',22)}<div><strong>Водитель самовывоза</strong>
+                <p>Информация для охраны и печатного пропуска. Если водитель ещё неизвестен, поля можно дополнить позднее.</p></div></div>
+              <div className="field"><label htmlFor="pickup-driver-name">Ф.И.О. водителя</label>
+                <input id="pickup-driver-name" value={driverName} onChange={e=>setDriverName(e.target.value)}
+                  placeholder="Имя и фамилия" maxLength={120} autoComplete="off"/></div>
+              <div className="field-grid">
+                <div className="field"><label htmlFor="pickup-driver-phone">Телефон водителя</label>
+                  <input id="pickup-driver-phone" type="tel" inputMode="tel" autoComplete="tel"
+                    value={driverPhone} onChange={e=>setDriverPhone(e.target.value)}
+                    placeholder="+992 9XX XX XX XX" maxLength={30}/></div>
+                <div className="field"><label htmlFor="pickup-plate">Госномер автомобиля</label>
+                  <input id="pickup-plate" value={vehiclePlate}
+                    onChange={e=>setVehiclePlate(e.target.value.toUpperCase())}
+                    placeholder="Например, 4488WA01" maxLength={24}/></div>
+              </div>
+              <div className="field-grid">
+                <div className="field"><label htmlFor="pickup-brand">Марка автомобиля</label>
+                  <input id="pickup-brand" value={vehicleBrand} onChange={e=>setVehicleBrand(e.target.value)}
+                    placeholder="Например, Mercedes-Benz" maxLength={80}/></div>
+                <div className="field"><label htmlFor="pickup-body">Тип кузова</label>
+                  <select id="pickup-body" value={vehicleBody} onChange={e=>setVehicleBody(e.target.value)}>
+                    <option value="">Не указан</option><option>Фургон</option><option>Бортовой</option>
+                    <option>Тентованный</option><option>Микроавтобус</option><option>Другой</option>
+                  </select></div>
+              </div>
+            </div>}
             <div className="field-grid"><div className="field"><label htmlFor="date">Желаемая дата</label><input id="date" type="date" value={deliveryDate} onChange={e=>setDeliveryDate(e.target.value)}/></div>
               <div className="field"><label htmlFor="address">Адрес / ориентир</label><input id="address" value={address} onChange={e=>setAddress(e.target.value)} placeholder="При необходимости" maxLength={160}/></div></div>
             <div className="field"><label htmlFor="notes">Примечание к заказу</label><textarea id="notes" rows={3} value={notes}
