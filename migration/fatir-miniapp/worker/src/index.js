@@ -120,10 +120,9 @@ export default {
       const result=await verifySignedWorkflow(body,env);
       return respond(result,result.ok?200:result.error==='REPLAYED_WORKFLOW_REQUEST'?409:result.error==='NONCE_STORE_UNAVAILABLE'?503:401,'');
     }
-    // Staging is READ ONLY. Prevent writes to live n8n/Google Sheets until full cutover.
-    // Validate the request locally; no creation or mutation is triggered here.
-    if(url.pathname==='/api/orders'){
-      return fail('Тестовый режим FATIR: создание заявок временно отключено до завершения миграции. Данные не отправлены.',503,origin);
+    // Enable order submission explicitly after signed staging tests. Disabled by default.
+    if(url.pathname==='/api/orders'&&env.SUBMIT_ENABLED!=='true'){
+      return fail('Создание заявок ещё не разрешено в тестовой версии. Используйте проверку без отправки.',503,origin);
     }
     try {
       const {actor,catalog,role}=await authorize(body,env);
@@ -173,11 +172,23 @@ export default {
           clientName=client.name;region ||= client.region;city ||= client.city;
         }
         if(!clientName||!city)return fail('Укажите клиента и город',400,origin);
+        const pickup=body.deliveryType!=='Доставка';
+        const fields={
+          driverName:text(pickup?body.driverName:'',120),
+          driverPhone:text(pickup?body.driverPhone:'',30),
+          vehiclePlate:text(pickup?body.vehiclePlate:'',24).toUpperCase(),
+          vehicleBrand:text(pickup?body.vehicleBrand:'',80),
+          vehicleBody:text(pickup?body.vehicleBody:'',80)
+        };
+        if(Object.values(fields).some(v=>/[<>\\x00-\\x1f]/.test(v))||
+           (fields.driverPhone&&!/^\\+?[0-9()\\s-]{6,30}$/.test(fields.driverPhone)))
+          return fail('Проверьте данные водителя',400,origin);
         const items=itemRows(body.items,catalog.products||[]);
-        await signedWorkflow(env,'SUBMIT',{telegram_id:actor.id,request_id:req,clientName,region,city,
+        const accepted=await signedWorkflow(env,'SUBMIT',{telegram_id:actor.id,request_id:req,clientName,region,city,
           address:text(body.address),deliveryDate:text(body.deliveryDate),
-          deliveryType:body.deliveryType==='Доставка'?'Доставка':'Самовывоз',
-          notes:text(body.notes,400),items});
+          deliveryType:pickup?'Самовывоз':'Доставка',
+          ...fields,notes:text(body.notes,400),items});
+        if(accepted?.ok===false)throw Object.assign(new Error('SUBMIT_REJECTED'),{status:503});
         return respond({accepted:true,pending:true,requestId:req,status:'PROCESSING'},200,origin);
       }
       if(url.pathname==='/api/order-status'){
