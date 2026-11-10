@@ -297,3 +297,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .pass-row{break-inside:avoid!important;page-break-inside:avoid!important}
  .gate-pass-copy{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 }
+
+/* Batch print selection within the order queue */
+.pass-batch-selector{margin:9px 13px 8px;padding:9px 10px;border:1px solid #c9d8c5;border-radius:13px;background:#f7faf5}
+.pass-batch-title{font-size:10px;color:#344e39;font-weight:800;margin:0 0 7px}
+.pass-batch-picks{display:flex;flex-wrap:wrap;gap:5px;max-height:76px;overflow:auto}
+.pass-batch-choice{font-size:10px;display:inline-flex;align-items:center;gap:4px;background:#fff;border-radius:8px;border:1px solid #dbe4d8;padding:4px 7px;cursor:pointer;white-space:nowrap}
+.pass-batch-choice:has(input:checked){background:#dfecd9;border-color:#799975}
+.pass-batch-choice input{width:13px;height:13px;accent-color:#3f673d}
+.pass-batch-go{font-size:10px!important;padding:8px 12px!important;margin-top:8px;width:100%;display:flex;justify-content:center;gap:7px;align-items:center}
+.pass-demo-actions{display:flex;align-items:center;gap:10px;margin-bottom:9px;flex-wrap:wrap}
+.pass-demo-actions small{max-width:250px;font-size:10px;color:#738474}
+.pass-demo-actions .btn-light{font-size:12px;display:inline-flex;align-items:center;gap:7px}
+@media print{.pass-batch-selector,.pass-demo-actions{display:none!important}}
