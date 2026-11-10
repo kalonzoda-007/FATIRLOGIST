@@ -254,10 +254,9 @@ export default function App(){
     const updated=arr.map(l=>l.key===id?{...l,...patch}:l);
     const index=updated.findIndex(l=>l.key===id);
     const last=updated[updated.length-1];
-    const quantityCommitted=Object.prototype.hasOwnProperty.call(patch,'quantity');
-    // A new product field appears after the final line has a product,
-    // plant and a positive quantity. Never add repeated empty lines.
-    if(index===updated.length-1&&quantityCommitted&&last.productCode&&last.plant&&
+    // Append when the last item becomes complete, regardless of field order.
+    // Repeated edits on a completed earlier row never create duplicates.
+    if(index===updated.length-1&&last.productCode&&last.plant&&
        Number.isSafeInteger(last.quantity)&&last.quantity>0&&updated.length<30){
       return [...updated,firstLine()];
     }
