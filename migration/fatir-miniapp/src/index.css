@@ -372,3 +372,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .line-card .quantity-control button{min-width:46px;min-height:46px}
   .product-auto-hint{font-size:10px}
 }
+
+/* Separate safe validation from real FATIR registration */
+.submit-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
+.submit-actions button{min-height:48px;white-space:normal;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+@media(max-width:680px){.submit-actions{flex-direction:column;width:100%;gap:9px}.submit-actions button{width:100%;font-size:13px}}
