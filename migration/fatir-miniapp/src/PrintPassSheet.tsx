@@ -1,81 +1,79 @@
-import { useEffect, useRef } from 'react';
+import {useEffect,useRef} from 'react';
 
-export type PassItem = { name: string; quantity: number; plant: string; weightKg?: number };
-export type PassData = {
-  orderId: string;
-  client: string;
-  destination: string;
-  deliveryDate: string;
-  createdAt: string;
-  driver?: string;
-  vehicle?: string;
-  totalBags: number;
-  totalWeightKg: number;
-  items: PassItem[];
-  status?: string;
-  demo?: boolean;
+export type PassItem={name:string;quantity:number;plant:string;weightKg?:number};
+export type PassData={
+  orderId:string;client:string;destination:string;deliveryDate:string;createdAt:string;
+  driver?:string;vehicle?:string;vehicleBrand?:string;vehicleBody?:string;
+  driverPhone?:string;passNo?:string;waybillNo?:string;
+  totalBags:number;totalWeightKg:number;items:PassItem[];status?:string;demo?:boolean;
 };
-
-const tidy=(v:string)=>v?.trim()||'—';
 const fmt=(v:number)=>Number(v||0).toLocaleString('ru-RU');
-function localDate(date:string){
-  if(!date)return '—';
-  if(/^\d{4}-\d{2}-\d{2}$/.test(date))return date.slice(8,10)+'.'+date.slice(5,7)+'.'+date.slice(0,4);
-  const d=new Date(date);
-  return Number.isNaN(d.valueOf())?'—':d.toLocaleDateString('ru-RU',{timeZone:'Asia/Dushanbe'});
+const display=(v?:string)=>String(v||'').trim()||'________________';
+function dateOnly(v:string){
+ if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v.slice(8)+'.'+v.slice(5,7)+'.'+v.slice(0,4);
+ const t=new Date(v);
+ return Number.isNaN(t.getTime())?'—':t.toLocaleDateString('ru-RU',{timeZone:'Asia/Dushanbe'});
 }
-function Copy({data,copy}:{data:PassData,copy:'ОХРАНА'|'СКЛАД'}){
-  const preview=data.demo===true;
-  const lines=data.items.filter(x=>x.name && x.quantity>0);
-  return <div className={'gate-pass-copy'+(preview?' gate-pass-demo':'')}>
-    <div className="pass-head"><div><b>FATIR</b><span>МУКОМОЛЬНОЕ ПРОИЗВОДСТВО</span></div>
-      <div className="pass-head-right"><strong>ПРОПУСК</strong><small>Экземпляр: {copy}</small></div></div>
-    <div className="pass-identity"><span>Заявка № <b>{tidy(data.orderId)}</b></span><span>Дата: <b>{localDate(data.createdAt)}</b></span></div>
-    <div className="pass-field"><span>Клиент:</span><strong>{tidy(data.client)}</strong></div>
-    <div className="pass-field"><span>Направление:</span><strong>{tidy(data.destination)}</strong></div>
-    <div className="pass-field pass-field-split"><div><span>Водитель:</span><strong>{tidy(data.driver||'')}</strong></div>
-      <div><span>Автомобиль / госномер:</span><strong>{tidy(data.vehicle||'')}</strong></div></div>
-    <div className="pass-goods"><span>Товар:</span><strong>{lines.length?lines.slice(0,2).map(x=>x.name+' — '+fmt(x.quantity)+' меш.').join('; '):'—'}{lines.length>2?' (и ещё '+(lines.length-2)+' поз.)':''}</strong></div>
-    <div className="pass-summary"><span>Всего: <b>{fmt(data.totalBags)} меш.</b></span><span>Масса: <b>{fmt(data.totalWeightKg)} кг</b></span>
-      <span>Отгрузка: <b>{localDate(data.deliveryDate)}</b></span></div>
-    <div className="pass-signatures"><span>Логист: _______________</span><span>Охрана: _______________</span></div>
-    <div className="pass-foot">{preview?'ОБРАЗЕЦ — НЕ ДЕЙСТВИТЕЛЕН': 'Въезд и выдача товара — только после разрешения ответственного сотрудника'}</div>
-    {preview&&<div className="pass-watermark">ОБРАЗЕЦ</div>}
-  </div>;
+function Cell({label,value}:{label:string;value?:string}){
+ return <div className="rp-cell"><span>{label}</span><strong>{display(value)}</strong></div>;
+}
+function OneCopy({data,copy}:{data:PassData;copy:'ОХРАНА'|'КЛИЕНТ'}){
+ const items=data.items.filter(x=>x.name&&Number(x.quantity)>0);
+ return <article className={'rp-copy'+(data.demo?' rp-demo':'')}>
+   <div className="rp-title">Экземпляр для {copy==='ОХРАНА'?'охраны':'клиента'}</div>
+   <div className="rp-meta"><strong>Рухсатнома № {data.passNo||data.orderId}</strong><strong>Лента {data.waybillNo||'________'}</strong></div>
+   <div className="rp-company">Фатир Агро</div>
+   <div className="rp-details">
+     <Cell label="Сана / Дата:" value={dateOnly(data.createdAt)}/>
+     <Cell label="№ а/м:" value={data.vehicle}/>
+     <Cell label="Ба кӣ / Клиент:" value={data.client}/>
+     <Cell label="Тамға а/м:" value={data.vehicleBrand}/>
+     <Cell label="Ба вос. кӣ / Водитель:" value={data.driver}/>
+     <Cell label="Тип кузова:" value={data.vehicleBody}/>
+     <div className="rp-cell rp-wide"><span>Тел. водителя:</span><strong>{display(data.driverPhone)}</strong></div>
+   </div>
+   <table className="rp-products">
+     <colgroup><col style={{width:'7%'}}/><col style={{width:'43%'}}/><col style={{width:'18%'}}/><col style={{width:'14%'}}/><col style={{width:'18%'}}/></colgroup>
+     <thead><tr><th>№</th><th>Номгӯи маҳсулот</th><th>Миқдор</th><th>Ченак</th><th>Нетто, кг</th></tr></thead>
+     <tbody>{items.map((x,i)=><tr key={i}><td>{i+1}</td><td className="rp-product-name">{x.name}</td><td>{fmt(x.quantity)}</td><td>шт</td><td>{x.weightKg==null?'—':fmt(x.weightKg)}</td></tr>)}</tbody>
+     <tfoot><tr><th colSpan={4}>Ҳамагӣ нетто / Итого нетто</th><th>{fmt(data.totalWeightKg)}</th></tr></tfoot>
+   </table>
+   <div className="rp-qty">Миқдори умумӣ / Всего мешков: <strong>{fmt(data.totalBags)}</strong> · Дата отгрузки: <strong>{dateOnly(data.deliveryDate)}</strong></div>
+   <div className="rp-sign">Мудири анбор / Кладовщик <span>________________</span> Имзо <span>________</span></div>
+   <div className="rp-sign">Муҳофиза / Охрана <span>________________</span> Имзо <span>________</span></div>
+   <div className="rp-sign">Ронанда / Водитель <span>________________</span> Имзо <span>________</span></div>
+   {data.demo&&<div className="rp-watermark">ОБРАЗЕЦ</div>}
+   <div className="rp-footer">{data.demo?'НЕ ДЕЙСТВИТЕЛЕН':'Печать не подтверждает разрешение на въезд или отпуск товара'}</div>
+ </article>;
+}
+function Sheet({passes}:{passes:PassData[]}){
+ return <div className="rp-a4">
+   {passes.slice(0,3).map((p,i)=><section className="rp-pair" key={p.orderId+'-'+i}>
+      <OneCopy data={p} copy="ОХРАНА"/>
+      <OneCopy data={p} copy="КЛИЕНТ"/>
+   </section>)}
+ </div>;
 }
 export default function PrintPassSheet({passes,printKey,onClose}:{passes:PassData[];printKey:number;onClose:()=>void}){
-  const lastPrint=useRef<number>(-1);
-  useEffect(()=>{
-    if(!passes.length||printKey===lastPrint.current)return;
-    lastPrint.current=printKey;
-    // After React commits the printable sheet, invoke native print. Some Telegram
-    // mobile webviews may suppress print: a visible manual button remains available.
-    const frame=requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      try{window.print()}catch{/* user may retry via the print button */}
-    }));
-    return ()=>cancelAnimationFrame(frame);
-  },[passes,printKey]);
-  if(!passes.length)return null;
-  return <>
-    <div className="pass-preview-backdrop" role="dialog" aria-modal="true" aria-label="Печать пропусков">
-      <div className="pass-preview-panel">
-        <div className="pass-preview-toolbar"><strong>Пропуска FATIR · A4</strong><span>На листе до 3 пропусков, каждый в двух экземплярах</span>
-          <button type="button" onClick={()=>window.print()}>Печать / PDF</button>
-          <button type="button" onClick={onClose}>Закрыть</button></div>
-        <div className="pass-screen-help">Бумага A4, книжная ориентация, масштаб 100%. Если окно печати не появилось автоматически — нажмите «Печать / PDF».</div>
-        <div className="pass-paper"><SheetRows passes={passes}/></div>
+ const last=useRef(-1);
+ useEffect(()=>{
+   if(!passes.length||last.current===printKey)return;
+   last.current=printKey;
+   const frame=requestAnimationFrame(()=>requestAnimationFrame(()=>{try{window.print()}catch{/* User can tap Print/PDF */}}));
+   return ()=>cancelAnimationFrame(frame);
+ },[passes,printKey]);
+ if(!passes.length)return null;
+ return <>
+  <div className="pass-preview-backdrop" role="dialog" aria-modal="true" aria-label="Печать пропусков">
+    <div className="pass-preview-panel">
+      <div className="pass-preview-toolbar"><strong>Фатир Агро · Рухсатнома</strong><span>А4 · 3 пропуска / лист · охрана + клиент</span>
+        <button type="button" onClick={()=>window.print()}>🖨 Печать / PDF</button>
+        <button type="button" onClick={onClose}>Закрыть</button>
       </div>
+      <div className="pass-screen-help">Товары появляются по фактическому количеству позиций, пустые строки не добавляются. Если товаров слишком много для трёх пропусков, проверьте перенос на дополнительный лист перед печатью.</div>
+      <div className="rp-paper-preview"><Sheet passes={passes}/></div>
     </div>
-    <div className="print-only-pass-paper"><SheetRows passes={passes}/></div>
-  </>;
-}
-function SheetRows({passes}:{passes:PassData[]}){
-  return <div className="pass-a4-sheet">
-    {Array.from({length:3},(_,i)=>{
-      const data=passes[i];
-      return <div className={'pass-row '+(!data?'pass-row-unused':'')} key={i}>
-        {data?<><Copy data={data} copy="ОХРАНА"/><div className="pass-cut-line" aria-hidden="true"/><Copy data={data} copy="СКЛАД"/></>:<div className="pass-spare-slot">Место для следующего пропуска · № {i+1}</div>}
-      </div>;
-    })}
-  </div>;
+  </div>
+  <div className="rp-print-only"><Sheet passes={passes}/></div>
+ </>;
 }
