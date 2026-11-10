@@ -25,6 +25,8 @@ type Order = {
   region:string;city:string;address:string;deliveryDate:string;deliveryType:string;
   sourceText:string;totalBags:number;totalWeightKg:number;version:number;
   updatedAt:string;requesterId:string;logisticId:string;
+  driverName?:string;driverPhone?:string;vehiclePlate?:string;vehicleBrand?:string;vehicleBody?:string;
+  warehouseClerkName?:string;cashierName?:string;logisticName?:string;
 };
 type OrderLine = {itemId:string;productCode:string;productName:string;quantity:number;plant:string;unitWeight:number;totalWeightKg?:number;matchStatus?:string};
 type RecordEvent = {
@@ -150,6 +152,9 @@ export default function App(){
     if(d.order?.orderId!==orderId)throw Error('Не удалось проверить заказ перед печатью');
     const pass:PassData={
       orderId:d.order.orderId,client:d.order.clientName,
+      driver:d.order.driverName,driverPhone:d.order.driverPhone,vehicle:d.order.vehiclePlate,
+      vehicleBrand:d.order.vehicleBrand,vehicleBody:d.order.vehicleBody,
+      warehouseClerkName:d.order.warehouseClerkName,cashierName:d.order.cashierName,logisticName:d.order.logisticName,
       destination:[d.order.region,d.order.city].filter(Boolean).join(', '),
       deliveryDate:d.order.deliveryDate,createdAt:new Date().toISOString(),
       totalBags:d.order.totalBags,totalWeightKg:d.order.totalWeightKg,
@@ -210,6 +215,9 @@ export default function App(){
       }));
       openPrintSheet(selectedOrders.map(d=>({
         orderId:d.order.orderId,client:d.order.clientName,
+        driver:d.order.driverName,driverPhone:d.order.driverPhone,vehicle:d.order.vehiclePlate,
+        vehicleBrand:d.order.vehicleBrand,vehicleBody:d.order.vehicleBody,
+        warehouseClerkName:d.order.warehouseClerkName,cashierName:d.order.cashierName,logisticName:d.order.logisticName,
         destination:[d.order.region,d.order.city].filter(Boolean).join(', '),
         deliveryDate:d.order.deliveryDate,createdAt:new Date().toISOString(),
         totalBags:d.order.totalBags,totalWeightKg:d.order.totalWeightKg,
