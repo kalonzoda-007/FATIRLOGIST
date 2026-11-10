@@ -270,7 +270,7 @@ export default function App(){
     const next=arr.filter(l=>l.key!==id);
     return next.length?next:[firstLine()];
   });
-  const submit=async()=>{
+  const submit=async(mode:'validate'|'create'='validate')=>{
     haptic();setErrorText('');setValidationNotice('');
     if(!clientId&&!clientName.trim()){setErrorText('Выберите клиента или заполните имя нового.');return}
     if(!city.trim()||!deliveryDate){setErrorText('Укажите город и дату отгрузки.');return}
@@ -279,13 +279,20 @@ export default function App(){
     }
     setBusy(true);
     try{
-      const d=await post('/api/orders/validate',{requestId,clientId,clientName,region,city,address,deliveryDate,deliveryType,notes,
+      const d=await post(mode==='create'?'/api/orders':'/api/orders/validate',{
+        requestId,clientId,clientName,region,city,address,deliveryDate,deliveryType,notes,
         driverName:deliveryType==='Самовывоз'?driverName.trim():'',driverPhone:deliveryType==='Самовывоз'?driverPhone.trim():'',
         vehiclePlate:deliveryType==='Самовывоз'?vehiclePlate.trim().toUpperCase():'',
         vehicleBrand:deliveryType==='Самовывоз'?vehicleBrand.trim():'',vehicleBody:deliveryType==='Самовывоз'?vehicleBody.trim():'',
         items:validLines.map(({productCode,quantity,plant})=>({productCode,quantity,plant}))});
-      if(!d.ok || !d.dryRun || d.saved!==false)throw Error('Сервер не подтвердил безопасную проверку');
-      setValidationNotice('Проверено: '+String(d.totalBags)+' меш., '+String(d.totalWeightKg)+' кг. Данные не отправлены и заказ не создан.');
+      if(mode==='create'){
+        if(!d.accepted||!d.pending||d.requestId!==requestId)throw Error('Сервер не подтвердил регистрацию заявки');
+        remember('fatir.pending',requestId);
+        setResult({pending:true,requestId});
+      }else{
+        if(!d.ok||!d.dryRun||d.saved!==false)throw Error('Сервер не подтвердил безопасную проверку');
+        setValidationNotice('Проверено: '+String(d.totalBags)+' меш., '+String(d.totalWeightKg)+' кг. Данные не отправлены и заказ не создан.');
+      }
     }catch(e:any){setErrorText(e?.response?.data?.error||e?.message||'Не удалось сохранить заявку')}
     finally{setBusy(false)}
   };
@@ -351,7 +358,7 @@ export default function App(){
 
   return <div className="shell">
     <div className="ambient a1"/><div className="ambient a2"/><div className="ambient a3"/>
-    <div className="migration-warning" role="status">🧪 ТЕСТОВАЯ ВЕРСИЯ FATIR — просмотр и печать зарегистрированных заказов. Создание заявок и согласования отключены до завершения миграции.</div>
+    <div className="migration-warning" role="status">🧪 ПРОВЕРОЧНАЯ ВЕРСИЯ FATIR. Кнопка «Отправить заявку» создаёт реальный ORD в рабочей базе. «Проверить без отправки» ничего не сохраняет. Изменение согласований пока отключено.</div>
     <header className="site-header">
       <div className="header-inner glass-surface">
         <div className="brand" onClick={()=>setView('new')} role="button" tabIndex={0}>
@@ -479,9 +486,13 @@ export default function App(){
           {validationNotice&&<div className="notice-success">{ico('check-circle-linear',18)} {validationNotice}</div>}
           <div className="pass-demo-actions"><button type="button" className="btn-light" onClick={printDemo}>{ico('printer-linear',18)} Посмотреть образец пропуска A4 (2 копии)</button><small>Образец с водяным знаком, не является пропуском на территорию</small></div>
           <div className="submit-row"><p>{ico('shield-check-linear',17)} Только авторизованные заявки</p>
-            <button type="button" className="btn-primary" disabled={busy||!products.length||!preparedLines.length}
-              title="Проверить заявку на защищённом сервере, не создавая ORD" onClick={submit}>
-              {busy?'Проверяем данные…':'Проверить заявку без отправки'} {ico('arrow-right-up-linear',19)}</button></div>
+            <div className="submit-actions">
+              <button type="button" className="btn-light" disabled={busy||!products.length||!preparedLines.length}
+                onClick={()=>submit('validate')}>{busy?'Проверяем…':'Проверить без отправки'}</button>
+              <button type="button" className="btn-primary" disabled={busy||!products.length||!preparedLines.length}
+                title="Сохранить реальный заказ в рабочей системе FATIR" onClick={()=>submit('create')}>
+                {busy?'Обработка…':'Отправить заявку'} {ico('arrow-right-up-linear',19)}</button>
+            </div></div>
         </div>
         <aside className="summary-column"><div className="summary-card glass-card">
           <div className="summary-head">{ico('clipboard-list-linear',21)}<span>Обзор заказа</span></div>
