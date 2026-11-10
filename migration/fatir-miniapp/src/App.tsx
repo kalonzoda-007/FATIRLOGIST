@@ -1,5 +1,6 @@
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import PrintPassSheet, {type PassData} from './PrintPassSheet';
 import { api } from './api';
 import { Icon } from '@iconify/react';
 
@@ -78,6 +79,10 @@ export default function App(){
   const [errorText,setErrorText]=useState('');
   const [validationNotice,setValidationNotice]=useState('');
   const [pollError,setPollError]=useState('');
+  const [printPasses,setPrintPasses]=useState<PassData[]>([]);
+  const [printKey,setPrintKey]=useState(0);
+  const [printError,setPrintError]=useState('');
+  const lastPrintedId=useRef('');
   const [orders,setOrders]=useState<Order[]>([]);
   const [orderSearch,setOrderSearch]=useState('');
   const [filter,setFilter]=useState('ALL');
@@ -131,6 +136,61 @@ export default function App(){
     };
     poll();return()=>{active=false;clearTimeout(wait)};
   },[auth,result?.pending,result?.requestId,post]);
+  const openPrintSheet=(entries:PassData[])=>{
+    if(!entries.length)return;
+    setPrintPasses(entries.slice(0,3));
+    setPrintKey(x=>x+1);
+  };
+  const registeredPass=(d:Detail):PassData=>({
+    orderId:d.order.orderId,client:d.order.clientName,
+    destination:[d.order.region,d.order.city].filter(Boolean).join(', '),
+    deliveryDate:d.order.deliveryDate,createdAt:new Date().toISOString(),
+    totalBags:d.order.totalBags,totalWeightKg:d.order.totalWeightKg,
+    items:d.items.map(item=>({
+      name:item.productName,quantity:item.quantity,plant:item.plant,
+      weightKg:item.unitWeight*item.quantity
+    })),status:d.order.status
+  });
+  const printRegisteredOrder=useCallback(async(orderId:string)=>{
+    if(!/^ORD-\\d{4}-\\d{6}$/.test(orderId))throw Error('Номер ORD не подтверждён');
+    const d=await post('/api/discussions/get',{orderId}) as Detail;
+    if(d.order?.orderId!==orderId)throw Error('Не удалось проверить заказ перед печатью');
+    const pass:PassData={
+      orderId:d.order.orderId,client:d.order.clientName,
+      destination:[d.order.region,d.order.city].filter(Boolean).join(', '),
+      deliveryDate:d.order.deliveryDate,createdAt:new Date().toISOString(),
+      totalBags:d.order.totalBags,totalWeightKg:d.order.totalWeightKg,
+      items:d.items.map(item=>({name:item.productName,quantity:item.quantity,plant:item.plant,weightKg:item.unitWeight*item.quantity})),
+      status:d.order.status
+    };
+    setPrintError('');
+    setPrintPasses([pass]);setPrintKey(x=>x+1);
+  },[post]);
+  useEffect(()=>{
+    // Print only after the server has returned an actual ORD ID and its detail has
+    // been fetched from the protected order database. Never print on a dry-run.
+    const id=result?.orderId;
+    if(auth!=='ready'||result?.pending||!id||!/^ORD-\\d{4}-\\d{6}$/.test(id)||lastPrintedId.current===id)return;
+    let active=true;
+    lastPrintedId.current=id;
+    printRegisteredOrder(id).catch(()=>{
+      if(active){lastPrintedId.current='';setPrintError('Пропуск не напечатан: не удалось проверить детали ORD. Используйте кнопку повторной печати.')}
+    });
+    return()=>{active=false};
+  },[auth,result?.pending,result?.orderId,printRegisteredOrder]);
+  const printDemo=()=>{
+    const selectedClient=clients.find(x=>x.code===clientId);
+    const pass:PassData={
+      orderId:'ОБРАЗЕЦ',client:selectedClient?.name||clientName||'Тестовый клиент',
+      destination:[region,city||'Худжанд'].join(', '),
+      deliveryDate,createdAt:new Date().toISOString(),
+      totalBags:lines.reduce((sum,x)=>sum+Number(x.quantity||0),0),
+      totalWeightKg:lines.reduce((sum,x)=>sum+Number(x.quantity||0)*Number(products.find(p=>p.code===x.productCode)?.weight||0),0),
+      items:lines.map(x=>({name:products.find(p=>p.code===x.productCode)?.name||'Товар для образца',quantity:Number(x.quantity||0),plant:x.plant||''})),
+      demo:true,status:'DEMO'
+    };
+    openPrintSheet([pass]);
+  };
   const loadOrders=useCallback(async()=>{
     setListBusy(true);setDiscussionError('');
     try{const d=await post('/api/discussions/list');setOrders(d.orders||[])}
@@ -262,6 +322,8 @@ export default function App(){
         <p>{result.pending?'Выполняется проверка товаров и запись в Google Sheets. Не отправляйте заявку повторно.':
           'Номер клиента: '+result.clientId+'. '+(result.requiresReview?'Нужно согласование нового клиента.':'Логистика получила заявку.')}</p>
         {pollError&&<Warning>{pollError}</Warning>}
+        {printError&&<Warning>{printError}</Warning>}
+        {!result.pending&&result.orderId&&<button type="button" className="btn-light" onClick={()=>printRegisteredOrder(result.orderId!).catch(()=>setPrintError('Не удалось проверить ORD для печати'))}>{ico('printer-linear',18)} Повторно распечатать 2 экземпляра</button>}
         {!result.pending&&<button type="button" className="btn-primary" onClick={reset}>{ico('add-circle-linear',20)} Создать следующую</button>}
       </section>:<div className="form-layout">
         <div className="form-panels">
@@ -320,6 +382,7 @@ export default function App(){
           </section>
           {errorText&&<Warning>{errorText}</Warning>}
           {validationNotice&&<div className="notice-success">{ico('check-circle-linear',18)} {validationNotice}</div>}
+          <div className="pass-demo-actions"><button type="button" className="btn-light" onClick={printDemo}>{ico('printer-linear',18)} Посмотреть образец пропуска A4 (2 копии)</button><small>Образец с водяным знаком, не является пропуском на территорию</small></div>
           <div className="submit-row"><p>{ico('shield-check-linear',17)} Только авторизованные заявки</p>
             <button type="button" className="btn-primary" disabled={busy||!products.length||true} title="Ожидается развёртывание безопасной серверной проверки" onClick={submit}>
               {'Проверка заявки временно отключена'} {ico('arrow-right-up-linear',19)}</button></div>
@@ -457,6 +520,7 @@ export default function App(){
           <button className="btn-primary" disabled={actionBusy} onClick={applyApproved}>{actionBusy?'Применяем…':'Подтвердить применение'} {ico('check-circle-linear',19)}</button></div>
       </div>
     </div>}
+    {!!printPasses.length&&<PrintPassSheet passes={printPasses} printKey={printKey} onClose={()=>setPrintPasses([])}/>}
     <footer className="site-footer"><span>© FATIR • Logistics Workspace</span><span>Solar icons — 480 Design / IconBuddy · CC BY 4.0</span></footer>
     <nav className="mobile-dock glass-surface" aria-label="Мобильная навигация">
       <button className={view==='new'?'active':''} onClick={()=>setView('new')}>{ico('document-add-linear',22)}<span>Заявка</span></button>
