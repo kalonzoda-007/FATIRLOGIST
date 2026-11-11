@@ -47,3 +47,17 @@ The original Vite base './' supports GitHub project Pages.
 - Template includes client, destination, product summary, bag quantity, total mass, dispatch date and signature lines. Driver/plate appear as blank fields because the current source does not persist them. The print footer explicitly states that entry/loading requires staff authorization.
 - The current staging backend still rejects production order creation. Therefore auto-print-after-submission is implemented but cannot be verified end-to-end until the real, safely migrated creation path is enabled. Do not enable staging orders just to test print.
 - For manual QA: print sample as A4 portrait at 100% scale; verify all 3 rows and 6 halves fit without overlap; repeat on Android Telegram WebView because built-in printing can vary by OS.
+
+## 2026-11-11 connectivity and reliability checkpoint
+
+- Production bot menu `/app` still targets the original `kalonzoda-007/applicant` GitHub Pages site, whose `src/apiClient.ts` still calls AppDeploy. Do not silently change the menu or existing Pages root before production end-to-end signoff.
+- The isolated staging page at `https://kalonzoda-007.github.io/FATIRLOGIST/migration-preview/` talks to Cloudflare Worker `fatir-miniapp-migration`; all secrets and D1 binding were present when checked.
+- Cloudflare staging real submission flag `SUBMIT_ENABLED=true`; staging app has clearly separate Check (no save) and Submit (real ORD) buttons. Do not test Submit using fictional production orders.
+- Staging bootstrap n8n completed successfully on Nov 11 2026 (execution 309), but client Sheet read intermittently took 27-64 seconds; Cloudflare bootstrap timeout raised to 110s and React client now retries a transient 502/503/504 once and offers manual retry. Writes and authentication failures are not retried.
+- n8n production Telegram Orders latest runs on Nov 7 and Nov 8 crashed after Telegram Trigger; no confirmed new successful production order after Nov 5. The Nov 10 manual invalid-HMAC execution 306 correctly failed at Verify and never reached Google Sheets.
+- Old n8n HMAC callback URLs in active bootstrap, read, audit and apply workflows were migrated to Cloudflare D1-based verification, preserving the original signed protocol. Legacy AppDeploy discussion editing endpoints have **not** been replaced pending transactional reconciliation.
+- A Nov 10 private diagnostic Telegram send succeeded; this verifies outbound message transmission, but not inbound Telegram Trigger or actual full order workflow.
+- Google Sheet ORDERS has additive driver_name, driver_phone, vehicle_plate, vehicle_brand, vehicle_body columns, with mappings in the signed n8n MiniApp path and read-only order detail; old rows left untouched.
+- New product editor reveals next blank line after the previous product, plant, and positive quantity are all filled. Pickup fields only appear in self-pickup mode. Builds and security tests passed; test pages deployed to isolated preview.
+- Gate-pass print button is configured to be sent in private chat after Check Item Count confirms complete write; its delivery is not yet verified by a real successful order.
+- Release blockers: a legitimate ORD end-to-end write test with staff user, verifying order registry, item rows, idempotency, status poll and the private print button; verifying recovery from the Telegram Trigger crashes; transactional legacy discussion history migration; final owner signoff before changing `/app`.
