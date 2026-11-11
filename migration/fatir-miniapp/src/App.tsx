@@ -62,6 +62,7 @@ function Pill({icon,text}:{icon:string;text:string}){return <span className="pil
 export default function App(){
   const [auth,setAuth]=useState<'checking'|'ready'|'denied'>('checking');
   const [authMessage,setAuthMessage]=useState('');
+  const [authRetryKey,setAuthRetryKey]=useState(0);
   const [user,setUser]=useState<User|null>(null);
   const [products,setProducts]=useState<Product[]>([]);
   const [clients,setClients]=useState<Client[]>([]);
@@ -120,16 +121,36 @@ export default function App(){
     const tg=window.Telegram?.WebApp;
     if(!tg?.initData){setAuth('denied');setAuthMessage('Откройте Mini App через кнопку FATIR-бота в Telegram. Обычная ссылка не передаёт данные авторизации.');return}
     tg.ready();tg.expand();
-    post('/api/bootstrap').then((d)=>{
-      setUser(d.user);setProducts(d.products||[]);setClients(d.clients||[]);
-      setAuth('ready');
-      const q=new URLSearchParams(window.location.search);
-      if(q.get('order')){setSelected(q.get('order')||'');setView('inbox')}
-    }).catch((e)=>{
-      setAuth('denied');
-      setAuthMessage(e?.response?.data?.error||e?.message||'Не удалось проверить доступ');
-    });
-  },[post]);
+    let active=true;
+    let retryTimer:ReturnType<typeof setTimeout>|undefined;
+    setAuth('checking');setAuthMessage('');
+    const authenticate=async()=>{
+      for(let attempt=0;attempt<2&&active;attempt++){
+        try{
+          const d=await post('/api/bootstrap');
+          if(!active)return;
+          setUser(d.user);setProducts(d.products||[]);setClients(d.clients||[]);
+          setAuth('ready');setAuthMessage('');
+          const q=new URLSearchParams(window.location.search);
+          if(q.get('order')){setSelected(q.get('order')||'');setView('inbox')}
+          return;
+        }catch(e:any){
+          if(!active)return;
+          const status=e?.response?.status;
+          if(attempt===0&&(status===503||status===502||status===504||status==null)){
+            setAuthMessage('Google Sheets отвечает с задержкой. Повторная проверка соединения…');
+            await new Promise<void>(resolve=>{retryTimer=setTimeout(resolve,1500)});
+            continue;
+          }
+          setAuth('denied');
+          setAuthMessage(e?.response?.data?.error||e?.message||'Не удалось проверить доступ');
+          return;
+        }
+      }
+    };
+    void authenticate();
+    return()=>{active=false;if(retryTimer)clearTimeout(retryTimer)};
+  },[post,authRetryKey]);
   useEffect(()=>{
     if(auth!=='ready'||!result?.pending||!result.requestId)return;
     let active=true,wait:ReturnType<typeof setTimeout>,attempt=0;
@@ -350,7 +371,10 @@ export default function App(){
     <div className="auth-card glass-card"><div className="mark large">F<span>·</span></div>
       <span className="overline">FATIR · SECURE WORKSPACE</span>
       <h1>{auth==='checking'?'Подключаем рабочее пространство':'Доступ ограничен'}</h1>
-      <p>{auth==='checking'?'Проверяем подпись Telegram и список пользователей USERS…':authMessage}</p>
+      <p>{authMessage||(auth==='checking'?'Проверяем подпись Telegram и список пользователей USERS…':'Не удалось проверить доступ')}</p>
+      {auth==='denied'&&!!window.Telegram?.WebApp?.initData&&<button className="btn-primary" type="button" onClick={()=>setAuthRetryKey(n=>n+1)}>
+        {ico('refresh-linear',18)} Повторить подключение
+      </button>}
       <div className="auth-line">{ico('shield-check-linear',17)} Доступ только сотрудникам FATIR</div>
     </div>
   </main>;
