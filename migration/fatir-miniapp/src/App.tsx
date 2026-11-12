@@ -312,7 +312,9 @@ export default function App(){
     }
     return updated;
   });
-  const preparedLines=lines.filter(l=>l.productCode||l.plant||l.quantity>0);
+  // An empty row may already have the logistic's default factory selected.
+  // It is only an item after the user chooses a product or enters a quantity.
+  const preparedLines=lines.filter(l=>l.productCode||l.quantity>0);
   const validLines=preparedLines.filter(l=>l.productCode&&l.plant&&Number.isSafeInteger(l.quantity)&&l.quantity>0);
   const dropLine=(id:string)=>setLines(arr=>{
     const next=arr.filter(l=>l.key!==id);
