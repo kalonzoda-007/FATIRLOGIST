@@ -19,5 +19,7 @@ jobs:
       - run: npm install
       - run: npm run build
       - run: npx tsc --noEmit
+      - run: npx esbuild src/ProductPicker.tsx --bundle --platform=node --format=esm --packages=external --outfile=.product-picker-test.mjs
+      - run: node scripts/check-catalog-search.mjs
       - run: node --check worker/src/index.js
       - run: node --test worker/tests/*.test.js
