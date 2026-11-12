@@ -178,7 +178,9 @@ export default function App(){
         const d=await post('/api/order-status',{requestId:result.requestId});
         if(!active)return;
         if(d.orderId&&!d.pending){
-          remember('fatir.pending',null);setResult({...d,pending:false});setPollError('');return;
+          remember('fatir.pending',null);setResult({...d,pending:false});setPollError('');
+          setSelected(d.orderId);setDetail(null);setView('inbox');
+          return;
         }
         setPollError('');
       }catch{if(active)setPollError('Проверка ответа задерживается. Не отправляйте заказ повторно.')}
@@ -476,6 +478,7 @@ export default function App(){
         {pollError&&<Warning>{pollError}</Warning>}
         {printError&&<Warning>{printError}</Warning>}
         {!result.pending&&result.orderId&&<button type="button" className="btn-light" onClick={()=>printRegisteredOrder(result.orderId!).catch(()=>setPrintError('Не удалось проверить ORD для печати'))}>{ico('printer-linear',18)} Повторно распечатать 2 экземпляра</button>}
+        {!result.pending&&result.orderId&&<button type="button" className="btn-light" onClick={()=>{setSelected(result.orderId||'');setDetail(null);setView('inbox')}}>{ico('clipboard-list-linear',19)} В истории заказов</button>}
         {!result.pending&&<button type="button" className="btn-primary" onClick={reset}>{ico('add-circle-linear',20)} Создать следующую</button>}
       </section>:<div className="form-layout">
         <div className="form-panels">
@@ -594,6 +597,43 @@ export default function App(){
           <p>{ico('shield-check-linear',18)} Регистрация через защищённый сервер FATIR</p>
         </div></aside>
       </div>}
+    </>:view==='profile'?<>
+      <section className="hero hero-compact profile-hero">
+        <div className="hero-copy">
+          <div className="overline"><span className="live-dot"/> FATIR / LOGISTIC ACCOUNT / 03</div>
+          <h1>Кабинет <em>логиста.</em></h1>
+          <p>Личный профиль, проверенная учётная запись и рабочие настройки.</p>
+        </div>
+      </section>
+      <div className="profile-layout">
+        <section className="profile-main glass-card">
+          <div className="profile-avatar">{(user?.name||'F').slice(0,2).toUpperCase()}</div>
+          <div className="profile-person">
+            <span className="overline">АВТОРИЗОВАННЫЙ СОТРУДНИК</span>
+            <h2>{user?.name||'Имя не указано в USERS'}</h2>
+            <p>{user?.role==='admin'?'Администратор FATIR':'Логист FATIR'}</p>
+            <div className="profile-account-id">Telegram ID: <b>{user?.id}</b></div>
+            <div className="profile-trust">{ico('shield-check-linear',17)} Вход подтверждён Telegram и списком сотрудников FATIR</div>
+          </div>
+        </section>
+        <section className="profile-preferences glass-card">
+          <div className="card-head"><div className="step-icon">{ico('buildings-linear',21)}</div>
+            <div><span className="step-label">НАСТРОЙКИ РАБОТЫ</span><h2>Завод по умолчанию</h2>
+            <p>Автоматически подставляется при добавлении товаров. Любую строку можно изменить отдельно.</p></div></div>
+          <div className="field"><label htmlFor="default-plant-select">Мой основной завод</label>
+            <select id="default-plant-select" value={defaultPlant} onChange={e=>changeDefaultPlant(e.target.value)}>
+              <option value="">Не выбирать автоматически</option>
+              {PLANTS.map(p=><option key={p.code} value={p.code}>{p.name}</option>)}
+            </select>
+          </div>
+          <div className="profile-plant-preview">{ico('box-linear',20)}
+            <div><b>{PLANTS.find(p=>p.code===defaultPlant)?.name||'Завод не выбран'}</b>
+              <span>{defaultPlant?'Следующая заявка начнётся с выбранного завода':'Завод выбирается вручную в каждой позиции'}</span></div></div>
+          {!!profileNotice&&<div className="notice-success">{ico('check-circle-linear',17)} {profileNotice}</div>}
+          <p className="profile-storage-note">Настройка сохраняется для вашей учётной записи в этом браузере Telegram. Для другого устройства её потребуется выбрать отдельно.</p>
+          <button type="button" className="btn-primary" onClick={()=>setView('new')}>{ico('document-add-linear',19)} Оформить заявку</button>
+        </section>
+      </div>
     </>:<>
       <section className="hero inbox-hero"><div><div className="overline"><span className="live-dot"/> FATIR / ORD HISTORY / 02</div>
         <h1>История <em>заказов.</em></h1>
@@ -645,7 +685,9 @@ export default function App(){
             <div className="order-top"><div><span className="overline">ЗАЯВКА / {detail.order.orderId}</span>
               <h2>{detail.order.clientName||'Неизвестный клиент'}</h2>
               <p>{ico('map-point-linear',17)} {detail.order.region}, {detail.order.city}</p></div>
-              <div className="order-actions"><Status value={detail.order.status}/><button className="icon-button" title="Обновить карточку" onClick={()=>loadDetail(selected)}>{ico('refresh-linear',19)}</button></div></div>
+              <div className="order-actions"><Status value={detail.order.status}/>
+                <button type="button" className="btn-light small" onClick={()=>printRegisteredOrder(detail.order.orderId).catch(e=>setDiscussionError(e?.message||'Ошибка печати'))}>{ico('printer-linear',17)} Пропуск</button>
+                <button className="icon-button" title="Обновить карточку" onClick={()=>loadDetail(selected)}>{ico('refresh-linear',19)}</button></div></div>
             <div className="metrics">
               <div>{ico('box-linear',20)}<div><span>Мешки</span><b>{fmt(detail.order.totalBags)}</b></div></div>
               <div>{ico('scale-linear',20)}<div><span>Масса</span><b>{fmt(detail.order.totalWeightKg)} кг</b></div></div>
@@ -659,7 +701,7 @@ export default function App(){
                 <div className="goods-mass"><b>{fmt(line.quantity*line.unitWeight)}</b><small>кг</small></div>
               </div>)}</div>
             </div>
-            <div className="desk-section"><div className="desk-title"><div>{ico('chat-line-linear',21)}<h3>Обсуждение и история</h3></div><span>{detail.timeline.length} событий</span></div>
+            {!isLogist&&<div className="desk-section"><div className="desk-title"><div>{ico('chat-line-linear',21)}<h3>Обсуждение (архив)</h3></div><span>{detail.timeline.length} событий</span></div>
               {!detail.timeline.length&&<div className="conversation-empty">{ico('chat-round-dots-linear',24)}
                 <p>{detail.migrationNotice || 'Пока нет сообщений. История обсуждений ещё не подтверждена.'}</p></div>}
               <div className="timeline">{detail.timeline.map(ev=><div className={'message '+(ev.actorId===user?.id?'mine':'')} key={ev.id}>
@@ -692,8 +734,8 @@ export default function App(){
                   <button type="button" className="btn-primary small" disabled={actionBusy||commentText.trim().length<3}
                     onClick={()=>postAction('/api/discussions/comment',{text:commentText,kind:commentKind})}>{ico('plain-2-linear',17)} Отправить</button></div>
               </div>:<div className="notice-line">{ico('lock-keyhole-linear',16)} Обсуждение закрыто для текущего статуса заявки.</div>}
-            </div>
-            {detail.canEdit&&canDiscuss(detail.order.status)&&<div className="desk-section proposal-panel">
+            </div>}
+            {!isLogist&&detail.canEdit&&canDiscuss(detail.order.status)&&<div className="desk-section proposal-panel">
               <div className="desk-title"><div>{ico('pen-new-square-linear',21)}<h3>Уточнение товаров</h3></div>
                 <button className="btn-light small" onClick={()=>proposalOpen?setProposalOpen(false):openProposal()}>{ico(proposalOpen?'close-circle-linear':'add-circle-linear',18)} {proposalOpen?'Закрыть':'Предложить правки'}</button></div>
               <p className="muted-copy">Исправления отправляются заявщику на согласование. Исходный ORD и товары остаются неизменными до отдельного применения.</p>
