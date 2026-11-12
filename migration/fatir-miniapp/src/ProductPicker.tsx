@@ -1,5 +1,4 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {createPortal} from 'react-dom';
 import {Icon} from '@iconify/react';
 
 export type CatalogProduct={
@@ -92,9 +91,9 @@ export default function ProductPicker({products,currentCode,onSelect,onClose}:{
    document.addEventListener('keydown',handler);
    return()=>document.removeEventListener('keydown',handler);
  },[matches,cursor,onSelect,onClose]);
- return createPortal(
-  <div className="catalog-picker-layer" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
-   <section className="catalog-picker" role="dialog" aria-modal="true" aria-label="Быстрый выбор товара">
+ return (
+  <div className="catalog-inline-layer">
+   <section className="catalog-picker catalog-picker-inline" role="region" aria-label="Поиск товара в заявке">
     <header className="catalog-picker-head">
       <div><span className="catalog-picker-eyebrow">FATIR · КАТАЛОГ</span><h3>Добавить товар</h3>
         <p>Найдите по названию, транскрипции, сорту или коду SKU</p></div>
@@ -134,5 +133,5 @@ export default function ProductPicker({products,currentCode,onSelect,onClose}:{
     <footer className="catalog-picker-foot"><span>Выбор автоматически заполнит позицию товара</span>
       <button type="button" onClick={onClose}>Отмена</button></footer>
    </section>
-  </div>,document.body);
+  </div>);
 }
