@@ -545,3 +545,115 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .pending-order-note{display:flex;align-items:center;gap:10px;border:1px solid #e4d39d;background:#fff8df;
  color:#735f2f;border-radius:12px;font-size:12px;line-height:1.55;padding:12px 16px;margin:0 0 14px}
 .pending-order-note svg{flex:none}
+
+/* Telegram-native adaptive FATIR. Platform is a presentation hint, NOT an auth signal. */
+.desktop-sidebar{display:none}
+.tg-desktop .adaptive-body{
+ width:100%;max-width:1750px;margin:0 auto;display:grid;
+ grid-template-columns:218px minmax(0,1fr);gap:17px;
+ align-items:start;padding:20px 24px 0;
+}
+.tg-desktop .desktop-sidebar{
+ display:flex;flex-direction:column;min-width:0;
+ position:sticky;top:101px;padding:18px 12px;gap:15px;
+ border-radius:20px;max-height:calc(100dvh - 120px);overflow-y:auto
+}
+.desktop-sidebar-overline{font-size:9px;font-weight:850;letter-spacing:1.25px;color:#879c82;padding:5px 9px}
+.desktop-sidebar-nav{display:flex;flex-direction:column;gap:5px}
+.desktop-sidebar-nav button{
+ appearance:none;border:0;background:transparent;color:#667f62;font-size:12px;font-weight:760;
+ display:flex;align-items:center;gap:11px;text-align:left;min-height:45px;
+ border-radius:12px;padding:11px 12px;line-height:1.3;white-space:normal
+}
+.desktop-sidebar-nav button svg{flex:none}
+.desktop-sidebar-nav button:hover{background:rgba(241,248,236,.98)}
+.desktop-sidebar-nav button.active{background:#e4efe0;color:#314f34;box-shadow:inset 0 0 0 1px #c7dec1}
+.desktop-sidebar-bottom{border-top:1px solid #d9e6d4;padding:15px 10px 3px;display:flex;flex-direction:column;gap:6px}
+.desktop-sidebar-bottom span{color:#8c9e85;font-size:10px;font-weight:720}
+.desktop-sidebar-bottom strong{color:#375b3a;font-size:13px}
+.desktop-sidebar-bottom small{color:#82937d;font-size:10px;margin-top:6px}
+.tg-desktop .app-main{min-width:0;width:100%;max-width:none;margin:0;padding:0 0 50px}
+.tg-desktop .main-nav{display:none}
+.tg-desktop .mobile-dock{display:none!important}
+.tg-desktop .site-footer{max-width:1690px}
+.tg-desktop .hero.hero-compact{margin-bottom:11px}
+.tg-desktop .form-layout{grid-template-columns:minmax(0,1fr) minmax(220px,275px);gap:15px}
+.tg-desktop .summary-column{display:block}
+.tg-desktop .form-card{padding:17px 20px}
+.tg-desktop .form-panels{gap:12px}
+.tg-desktop .user-pill>span{display:block}
+.tg-desktop .site-header{padding:12px 24px 0}
+.tg-desktop .header-inner{max-width:1680px}
+.tg-mobile .adaptive-body{display:block;min-width:0}
+.tg-mobile .desktop-sidebar{display:none!important}
+.tg-mobile .main-nav{display:none!important}
+.tg-mobile .site-header{padding:9px 11px 0}
+.tg-mobile .header-inner{padding:9px 12px;border-radius:17px}
+.tg-mobile .user-pill>span{display:none}
+.tg-mobile .app-main{max-width:760px;padding:18px 13px 110px}
+.tg-mobile .form-layout{grid-template-columns:1fr;gap:11px}
+.tg-mobile .summary-column{display:none}
+.tg-mobile .form-card{padding:15px}
+.tg-mobile .hero.hero-compact{flex-direction:column;align-items:stretch;padding:14px 0;margin-bottom:12px}
+.tg-mobile .hero-workflow{min-width:0;justify-content:space-between}
+.tg-mobile .hero-workflow-step{flex:1;justify-content:center}
+.tg-mobile .workspace{display:block}
+.tg-mobile .queue{max-height:none;position:static;margin-bottom:14px}
+.tg-mobile .queue-mobile-hide{display:none}
+.tg-mobile .back-mobile{display:inline-flex;align-items:center;gap:7px;background:#e7f0e3;border:0;color:#567450;padding:9px 12px;border-radius:10px;margin-bottom:15px;font-size:11px;font-weight:800;min-height:44px}
+.tg-mobile .mobile-dock{
+ position:fixed;display:flex!important;z-index:101;left:50%;
+ bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);
+ width:min(94%,460px);justify-content:space-around;align-items:center;
+ padding:9px 8px;border-radius:22px;box-shadow:0 17px 46px #39594029
+}
+.tg-mobile .mobile-dock button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;flex:1;
+ background:none;border:0;border-radius:13px;color:#91a48c;font-size:10px;font-weight:800;padding:7px 3px;min-height:46px}
+.tg-mobile .mobile-dock button.active{color:#3f6444;background:#dce9d6a6}
+.tg-mobile .site-footer{padding-bottom:104px}
+.tg-mobile .field input,.tg-mobile .field textarea,.tg-mobile .field select{min-height:46px}
+.layout-preference-field{margin-top:20px}
+@media(max-width:1330px){
+ .tg-desktop .adaptive-body{grid-template-columns:190px minmax(0,1fr);gap:12px;padding:15px 14px 0}
+ .tg-desktop .form-layout{grid-template-columns:minmax(0,1fr)}
+ .tg-desktop .summary-column{display:block}
+ .tg-desktop .summary-card{position:static}
+ .tg-desktop .hero-workflow{min-width:0}
+}
+@media(max-width:950px){
+ .tg-desktop .adaptive-body{grid-template-columns:165px minmax(0,1fr);gap:9px;padding:10px 10px 0}
+ .tg-desktop .desktop-sidebar{padding:10px 6px}
+ .tg-desktop .desktop-sidebar-nav button{font-size:11px;padding:9px 7px;gap:7px}
+ .tg-desktop .desktop-sidebar-overline{font-size:8px;letter-spacing:.45px}
+ .tg-desktop .header-inner{padding:10px 13px}
+ .tg-desktop .site-header{padding:8px 10px 0}
+ .tg-desktop .workspace{display:block}
+ .tg-desktop .queue{max-height:none;position:static;margin-bottom:13px}
+ .tg-desktop .queue-mobile-hide{display:none}
+ .tg-desktop .back-mobile{display:inline-flex;align-items:center;gap:7px;border:0;background:#e7f0e3;border-radius:10px;color:#567450;font-size:12px;font-weight:700;padding:10px 12px;margin-bottom:13px;min-height:44px}
+ .tg-desktop .hero.hero-compact{align-items:stretch}
+ .tg-desktop .hero-workflow{display:none}
+}
+@media(max-width:650px){
+ /* Telegram Desktop's embedded WebView can be narrow. Keep desktop navigation
+    visible as a horizontal rail instead of incorrectly switching to phone dock. */
+ .tg-desktop .adaptive-body{display:block;padding:8px 9px 0}
+ .tg-desktop .desktop-sidebar{position:static;max-height:none;overflow:visible;flex-direction:row;display:block;
+   padding:5px;border-radius:13px;margin-bottom:13px}
+ .tg-desktop .desktop-sidebar-overline,.tg-desktop .desktop-sidebar-bottom{display:none}
+ .tg-desktop .desktop-sidebar-nav{display:flex;flex-direction:row;gap:3px;overflow-x:auto;scrollbar-width:thin}
+ .tg-desktop .desktop-sidebar-nav button{white-space:nowrap;min-height:43px;flex:none;padding:8px 10px;font-size:10px}
+ .tg-desktop .app-main{padding:0 0 35px}
+ .tg-desktop .form-card{padding:12px}
+ .tg-desktop .form-card .field-grid{grid-template-columns:1fr}
+ .tg-desktop .header-inner .user-pill>span{display:none}
+ .tg-desktop .hero.hero-compact{padding:10px 0}
+ .tg-mobile .form-card .field-grid{grid-template-columns:1fr}
+ .tg-mobile .hero-workflow-step{font-size:9px;min-width:0}
+}
+@media print{
+ .tg-desktop .adaptive-body,.tg-mobile .adaptive-body{display:block!important;padding:0!important;margin:0!important}
+ .tg-desktop .desktop-sidebar,.tg-mobile .desktop-sidebar{display:none!important}
+ .tg-desktop .app-main,.tg-mobile .app-main{padding:0!important}
+ .tg-mobile .mobile-dock{display:none!important}
+}
