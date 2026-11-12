@@ -453,14 +453,17 @@ export default function App(){
     <main className="app-main">
     {printError&&<Warning>{printError}</Warning>}
     {view==='new'?<>
-      <section className="hero">
+      <section className="hero hero-compact">
         <div className="hero-copy"><div className="overline"><span className="live-dot"/> FATIR / ORDER MANAGEMENT / 01</div>
-          <h1>Новая <em>заявка.</em></h1>
-          <p>Клиент, товары и отгрузка — всё в одном удобном рабочем пространстве.</p>
+          <h1>Создание <em>заявки.</em></h1>
+          <p>Заполните заказ последовательно. История сохранится по номеру ORD.</p>
           <div className="hero-pills"><Pill icon="shield-check-linear" text="Защищено Telegram"/><Pill icon="buildings-linear" text="3 завода"/><Pill icon="box-linear" text={products.length+' товаров'}/></div>
         </div>
-        <div className="hero-illustration glass-card"><div className="orb-illustration">
-          {ico('box-minimalistic-linear',60)}</div><div className="orb-meta"><span>FATIR FLOW</span><b>Order → Logistics</b></div></div>
+        <div className="hero-workflow glass-card">
+          <div className="hero-workflow-step">{ico('users-group-rounded-linear',19)}<span>01 · Клиент</span></div>
+          <div className="hero-workflow-step">{ico('box-linear',19)}<span>02 · Товары</span></div>
+          <div className="hero-workflow-step">{ico('delivery-linear',19)}<span>03 · Отгрузка</span></div>
+        </div>
       </section>
       {result?<section className="result-card glass-card">
         <div className="result-icon">{ico(result.pending?'hourglass-line-linear':'check-circle-bold-duotone',42)}</div>
@@ -490,7 +493,7 @@ export default function App(){
               <div className="field"><label htmlFor="city">Город / район</label><input id="city" placeholder="Например, Истаравшан" value={city} onChange={e=>setCity(e.target.value)} maxLength={160}/></div></div>
           </section>
           <section className="form-card glass-card">
-            <div className="card-head"><div className="step-icon">{ico('box-linear',22)}</div><div><span className="step-label">ШАГ 02 / 03</span><h2>Товары и заводы</h2><p>Один заказ с нескольких производств</p></div></div>
+            <div className="card-head"><div className="step-icon">{ico('box-linear',22)}</div><div><span className="step-label">ШАГ 02 / 03</span><h2>Товары и заводы</h2><p>Товар → завод → количество. Следующая строка появится автоматически.</p></div></div>
             {lines.map((line,i)=>{
               const p=products.find(x=>x.code===line.productCode);
               return <div className="line-card" key={line.key}>
@@ -500,8 +503,8 @@ export default function App(){
                 </div>
                 <div className="field"><label htmlFor={'product-'+line.key}>Наименование товара</label>
                   <button type="button" id={'product-'+line.key} className={'catalog-select-trigger'+(p?' has-product':'')}
-                    aria-haspopup="dialog" title="Открыть быстрый поиск товара"
-                    onClick={()=>setPickerLineKey(line.key)}>
+                    aria-expanded={pickerLineKey===line.key} title="Развернуть быстрый поиск товаров"
+                    onClick={()=>setPickerLineKey(k=>k===line.key?null:line.key)}>
                     <span className="catalog-select-icon">{ico('magnifer-linear',18)}</span>
                     <span className="catalog-select-text">
                       <strong>{p?p.name:'Найти и выбрать товар'}</strong>
@@ -509,6 +512,8 @@ export default function App(){
                     </span>
                     {ico('alt-arrow-down-linear',17)}
                   </button>
+                  {pickerLineKey===line.key&&<ProductPicker products={products}
+                    currentCode={line.productCode} onSelect={onPickProduct} onClose={()=>setPickerLineKey(null)}/>}
                 </div>
                 <div className="field-grid"><div className="field"><label htmlFor={'plant-'+line.key}>Завод</label><select id={'plant-'+line.key} value={line.plant}
                   onChange={e=>updateLine(line.key,{plant:e.target.value})}><option value="">Выбрать завод</option>
@@ -520,7 +525,7 @@ export default function App(){
                       onChange={e=>updateLine(line.key,{quantity:e.target.value===''?0:Number(e.target.value)})}/>
                     <button type="button" onClick={()=>updateLine(line.key,{quantity:line.quantity+1})}>{ico('add-circle-linear',19)}</button>
                   </div></div></div>
-                {p&&<div className="line-footer"><span>{p.weight} кг / мешок</span><b>{fmt(p.weight*line.quantity)} кг</b></div>}
+                {p&&<div className="line-footer"><span>{p.code} · {p.weight} кг / мешок</span><b>{fmt(p.weight*line.quantity)} кг</b></div>}
               </div>
             })}
             <div className="product-auto-hint">{ico('check-circle-linear',18)} Заполните товар, завод и количество — следующая позиция появится автоматически.</div>
@@ -528,7 +533,7 @@ export default function App(){
               onClick={openNewProduct}>{ico('add-circle-linear',18)} {lines.length>=30&&!lines.some(l=>!l.productCode)?'Максимум 30 товаров':'Добавить товар — быстрый поиск'}</button>
             <div className="total-strip"><div><span>Всего мешков</span><strong>{fmt(totalBags)}</strong></div>
               <div><span>Общая масса</span><strong>{fmt(totalWeight)} <small>кг</small></strong></div></div>
-            <p className="notice-line">{ico('info-circle-linear',16)} Выбранный завод не означает резервирование. Остатки подтверждает склад.</p>
+            <p className="notice-line">{ico('info-circle-linear',16)} Завод по умолчанию можно изменить в кабинете логиста. Остатки подтверждает склад.</p>
           </section>
           <section className="form-card glass-card">
             <div className="card-head"><div className="step-icon">{ico('delivery-linear',23)}</div><div><span className="step-label">ШАГ 03 / 03</span><h2>Отгрузка</h2><p>Условия получения и дополнительные сведения</p></div></div>
@@ -603,7 +608,7 @@ export default function App(){
               <button key={val} className={filter===val?'on':''} onClick={()=>setFilter(val)}>{label}</button>)}
           </div>
           <div className="pass-batch-selector">
-            <div className="pass-batch-title">Печать на A4 · до 3 пропусков, по 2 копии</div>
+            <div className="pass-batch-title">Печать на A4 · 2 нусха барои ҳар рухсатнома</div>
             <div className="pass-batch-picks">
               {allFiltered.slice(0,40).map(o=><label key={o.orderId} className="pass-batch-choice">
                 <input type="checkbox" checked={batchIds.includes(o.orderId)}
@@ -724,9 +729,6 @@ export default function App(){
           <button className="btn-primary" disabled={actionBusy} onClick={applyApproved}>{actionBusy?'Применяем…':'Подтвердить применение'} {ico('check-circle-linear',19)}</button></div>
       </div>
     </div>}
-    {pickerLineKey&&<ProductPicker products={products}
-      currentCode={lines.find(l=>l.key===pickerLineKey)?.productCode}
-      onSelect={onPickProduct} onClose={()=>setPickerLineKey(null)}/>}
     {!!printPasses.length&&<PrintPassSheet passes={printPasses} printKey={printKey} onClose={()=>setPrintPasses([])}/>}
     <footer className="site-footer"><span>© FATIR • Logistics Workspace</span><span>Solar icons — 480 Design / IconBuddy · CC BY 4.0</span></footer>
     <nav className="mobile-dock glass-surface" aria-label="Мобильная навигация">
