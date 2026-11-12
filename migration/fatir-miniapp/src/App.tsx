@@ -3,12 +3,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PrintPassSheet, {type PassData} from './PrintPassSheet';
 import ProductPicker, {type CatalogProduct} from './ProductPicker';
 import { api } from './api';
+import {clientPlatformLabel,deviceLayout,type DeviceLayout} from './telegramLayout';
 import { Icon } from '@iconify/react';
 
 declare global {
   interface Window {
     Telegram?: { WebApp?: {
       initData: string;
+      platform?: string;
       ready():void;
       expand():void;
       colorScheme?:string;
@@ -64,6 +66,24 @@ export default function App(){
   const [auth,setAuth]=useState<'checking'|'ready'|'denied'>('checking');
   const [authMessage,setAuthMessage]=useState('');
   const [authRetryKey,setAuthRetryKey]=useState(0);
+  const [detectedLayout,setDetectedLayout]=useState<DeviceLayout>(()=>deviceLayout(window.Telegram?.WebApp?.platform,window.innerWidth));
+  const [layoutPreference,setLayoutPreference]=useState<'auto'|DeviceLayout>(()=>{
+    try{
+      const value=localStorage.getItem('fatir.layout.preference');
+      return value==='desktop'||value==='mobile'?value:'auto';
+    }catch{return 'auto'}
+  });
+  const chosenLayout:DeviceLayout=layoutPreference==='auto'?detectedLayout:layoutPreference;
+  useEffect(()=>{
+    const refresh=()=>setDetectedLayout(deviceLayout(window.Telegram?.WebApp?.platform,window.innerWidth));
+    refresh();
+    window.addEventListener('resize',refresh,{passive:true});
+    return()=>window.removeEventListener('resize',refresh);
+  },[]);
+  const changeLayoutPreference=(preference:'auto'|DeviceLayout)=>{
+    setLayoutPreference(preference);
+    try{localStorage.setItem('fatir.layout.preference',preference)}catch{}
+  };
   const [user,setUser]=useState<User|null>(null);
   const [products,setProducts]=useState<Product[]>([]);
   const [clients,setClients]=useState<Client[]>([]);
@@ -436,7 +456,7 @@ export default function App(){
     </div>
   </main>;
 
-  return <div className="shell">
+  return <div className={'shell tg-'+chosenLayout} data-telegram-platform={window.Telegram?.WebApp?.platform||'unknown'}>
     <div className="ambient a1"/><div className="ambient a2"/><div className="ambient a3"/>
     <div className="migration-warning" role="status">🧪 ПРОВЕРОЧНАЯ ВЕРСИЯ FATIR. Кнопка «Отправить заявку» создаёт реальный ORD в рабочей базе. «Проверить без отправки» ничего не сохраняет. Изменение согласований пока отключено.</div>
     <header className="site-header">
@@ -457,6 +477,26 @@ export default function App(){
         </button>
       </div>
     </header>
+    <div className="adaptive-body">
+      <aside className="desktop-sidebar glass-surface" aria-label="Разделы FATIR для компьютера">
+        <div className="desktop-sidebar-overline">FATIR · РАБОЧИЕ РАЗДЕЛЫ</div>
+        <nav className="desktop-sidebar-nav" aria-label="Навигация по разделам">
+          <button type="button" className={view==='new'?'active':''} onClick={()=>setView('new')}>
+            {ico('document-add-linear',20)}<span>Новая заявка</span>
+          </button>
+          <button type="button" className={view==='inbox'?'active':''} onClick={()=>setView('inbox')}>
+            {ico('clipboard-list-linear',20)}<span>История заказов</span>
+          </button>
+          {isLogist&&<button type="button" className={view==='profile'?'active':''} onClick={()=>setView('profile')}>
+            {ico('user-circle-linear',20)}<span>Кабинет логиста</span>
+          </button>}
+        </nav>
+        <div className="desktop-sidebar-bottom">
+          <span>Ваш рабочий завод</span>
+          <strong>{PLANTS.find(p=>p.code===defaultPlant)?.name||'Не выбран'}</strong>
+          <small>{clientPlatformLabel(window.Telegram?.WebApp?.platform)}</small>
+        </div>
+      </aside>
     <main className="app-main">
     {printError&&<Warning>{printError}</Warning>}
     {view==='new'?<>
@@ -629,6 +669,16 @@ export default function App(){
               {PLANTS.map(p=><option key={p.code} value={p.code}>{p.name}</option>)}
             </select>
           </div>
+          <div className="field layout-preference-field">
+            <label htmlFor="layout-preference">Вид интерфейса в Telegram</label>
+            <select id="layout-preference" value={layoutPreference}
+              onChange={e=>changeLayoutPreference(e.target.value as 'auto'|DeviceLayout)}>
+              <option value="auto">Автоматически ({clientPlatformLabel(window.Telegram?.WebApp?.platform)})</option>
+              <option value="desktop">Для компьютера</option>
+              <option value="mobile">Для телефона</option>
+            </select>
+            <p className="field-hint">По умолчанию FATIR выбирает интерфейс по Telegram. Настройка влияет только на внешний вид.</p>
+          </div>
           <div className="profile-plant-preview">{ico('box-linear',20)}
             <div><b>{PLANTS.find(p=>p.code===defaultPlant)?.name||'Завод не выбран'}</b>
               <span>{defaultPlant?'Следующая заявка начнётся с выбранного завода':'Завод выбирается вручную в каждой позиции'}</span></div></div>
@@ -769,6 +819,7 @@ export default function App(){
       </div>
     </>}
     </main>
+    </div>
     {applyTarget&&<div className="dialog-backdrop" role="dialog" aria-modal="true" aria-labelledby="apply-title">
       <div className="dialog-card glass-card">
         <div className="dialog-icon">{ico('shield-check-linear',30)}</div>
