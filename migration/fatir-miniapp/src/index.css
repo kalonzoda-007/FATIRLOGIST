@@ -541,3 +541,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .rp-layout-3 .rp-pair{min-height:91mm}
 .rp-page-stack>.rp-a4{margin-bottom:8mm}
 @media print{.rp-page-stack>.rp-a4{margin-bottom:0!important}}
+
+.pending-order-note{display:flex;align-items:center;gap:10px;border:1px solid #e4d39d;background:#fff8df;
+ color:#735f2f;border-radius:12px;font-size:12px;line-height:1.55;padding:12px 16px;margin:0 0 14px}
+.pending-order-note svg{flex:none}
