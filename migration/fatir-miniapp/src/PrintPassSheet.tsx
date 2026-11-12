@@ -14,12 +14,12 @@ export function uniquePrintedItems(items:PassItem[]):PassItem[]{
  const seen=new Set<string>();
  return items.filter(x=>{
    if(!x.name?.trim()||!Number.isFinite(Number(x.quantity))||Number(x.quantity)<=0)return false;
-   const identity=[x.name.trim().toLocaleLowerCase(),x.plant.trim().toLowerCase(),Number(x.quantity),x.weightKg==null?'':Number(x.weightKg)].join('|');
+   const identity=[x.name.trim().toLocaleLowerCase(),String(x.plant||'').trim().toLowerCase(),Number(x.quantity),x.weightKg==null?'':Number(x.weightKg)].join('|');
    if(seen.has(identity))return false;
    seen.add(identity);return true;
  });
 }
-const copiesPerPage=(count:number)=>count<=5?3:count<=12?2:1;
+export const copiesPerPage=(count:number)=>count<=5?3:count<=12?2:1;
 const fmt=(v:number)=>Number(v||0).toLocaleString('ru-RU');
 const display=(v?:string)=>String(v||'').trim()||'________________';
 function dateOnly(v:string){
