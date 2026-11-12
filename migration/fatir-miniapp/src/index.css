@@ -442,3 +442,102 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .form-card .card-head h2{font-size:16px}
  .form-card .card-head .step-icon svg{width:19px;height:19px}
 }
+
+/* FATIR 2026-11-12 — dense responsive order form and embedded product search */
+.hero.hero-compact{min-height:0;padding:24px 0 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.hero.hero-compact .hero-copy h1{font-size:clamp(24px,3.7vw,38px);line-height:1.13;margin:10px 0}
+.hero.hero-compact .hero-copy>p{font-size:12px;max-width:510px;line-height:1.5}
+.hero-workflow{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:13px 17px;min-width:280px}
+.hero-workflow-step{display:flex;align-items:center;gap:6px;border-radius:9px;background:#edf4e9;padding:8px 10px;color:#435c41;font-size:10px;font-weight:750}
+.hero-workflow-step svg{width:17px;height:17px}
+.form-panels{gap:12px}
+.form-card{padding:20px 22px}
+.card-head{gap:12px;margin-bottom:16px}
+.card-head h2{font-size:18px}
+.card-head .step-icon{width:43px;height:43px;border-radius:13px}
+.form-card .field{margin-top:12px}
+.form-card .field-grid{gap:11px}
+.form-card .line-card{padding:12px 14px;border-radius:14px}
+.form-card .line-top{margin-bottom:7px}
+.form-card .line-footer{font-size:11px}
+.catalog-inline-layer{position:relative;z-index:4;margin-top:7px;max-width:100%}
+.catalog-inline-layer .catalog-picker.catalog-picker-inline{
+ box-sizing:border-box;width:100%;min-width:0;min-height:0;max-height:none;display:flex;
+ flex-direction:column;background:rgba(252,253,250,.98);color:#263526;
+ border:1px solid #d2e2cb;border-radius:13px;overflow:hidden;
+ box-shadow:0 8px 20px rgba(42,67,37,.08)
+}
+.catalog-inline-layer .catalog-picker-head{padding:11px 12px 8px}
+.catalog-inline-layer .catalog-picker-head h3{font-size:13px;margin:2px 0}
+.catalog-inline-layer .catalog-picker-head p{font-size:10px}
+.catalog-inline-layer .catalog-picker-search{margin:0 10px 7px;min-height:44px}
+.catalog-inline-layer .catalog-picker-search input{font-size:13px!important;min-height:44px}
+.catalog-inline-layer .catalog-picker-grades,.catalog-inline-layer .catalog-picker-categories{padding:0 10px 6px}
+.catalog-inline-layer .catalog-picker-counter{padding:6px 11px}
+.catalog-inline-layer .catalog-picker-results{max-height:252px;min-height:64px;flex:auto;overflow-y:auto;padding:0 6px 5px}
+.catalog-inline-layer .catalog-picker-result{min-height:53px;padding:6px 8px;margin-bottom:3px}
+.catalog-inline-layer .catalog-picker-foot{padding:5px 10px}
+.catalog-inline-layer .catalog-picker-foot button{min-height:44px}
+.catalog-inline-layer .catalog-picker-close{min-width:44px;min-height:44px}
+.user-pill-button{appearance:none;cursor:pointer;border:1px solid rgba(107,127,91,.2);font:inherit;text-align:left}
+.user-pill-button:hover{background:rgba(231,241,226,.9)}
+.profile-hero{margin-bottom:6px}
+.profile-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}
+.profile-main,.profile-preferences{padding:24px}
+.profile-main{display:flex;gap:17px;align-items:flex-start}
+.profile-avatar{width:76px;height:76px;flex:none;display:grid;place-items:center;border-radius:22px;
+ background:linear-gradient(125deg,#2e3a2f,#78906b);color:#fff;font-size:25px;font-weight:800}
+.profile-person{min-width:0;flex:1}
+.profile-person h2{font-size:21px;font-weight:800;overflow-wrap:anywhere;margin:5px 0}
+.profile-person p{color:#64805b;font-size:12px;margin:0 0 10px}
+.profile-account-id{font-size:12px;color:#6b7f5b}
+.profile-trust{display:flex;align-items:center;gap:7px;color:#4d7348;background:#eef6e9;border-radius:11px;padding:10px;margin-top:16px;font-size:11px;line-height:1.4}
+.profile-trust svg{flex:none}
+.profile-preferences .card-head{margin-bottom:17px}
+.profile-preferences .field select{font-size:14px}
+.profile-plant-preview{display:flex;align-items:center;gap:12px;border:1px solid #d9e5d5;background:#f1f7ec;border-radius:14px;padding:14px;margin:14px 0}
+.profile-plant-preview>svg{color:#5f845a;flex:none}
+.profile-plant-preview>div{display:flex;flex-direction:column;gap:3px}
+.profile-plant-preview b{font-size:13px;color:#2e3a2f}
+.profile-plant-preview span{font-size:11px;color:#6b806a}
+.profile-storage-note{font-size:11px;line-height:1.5;color:#7b9078}
+.profile-preferences .btn-primary{margin-top:12px}
+@media(max-width:850px){
+ .hero.hero-compact{flex-direction:column;align-items:stretch;padding:17px 0}
+ .hero-workflow{min-width:0;justify-content:space-between}
+ .hero-workflow-step{flex:1;justify-content:center}
+ .profile-layout{grid-template-columns:1fr}
+}
+@media(max-width:680px){
+ .hero.hero-compact .hero-pills{margin-top:8px}
+ .hero-workflow{gap:4px;padding:9px}
+ .hero-workflow-step{padding:8px 4px;font-size:9px}
+ .form-card{padding:14px}
+ .form-card .field-grid{gap:8px}
+ .form-card .card-head{gap:8px;margin-bottom:10px}
+ .form-card .card-head h2{font-size:16px}
+ .form-card .line-card{padding:11px}
+ .catalog-inline-layer .catalog-picker.catalog-picker-inline{border-radius:10px}
+ .catalog-inline-layer .catalog-picker-item-icon{display:none}
+ .catalog-inline-layer .catalog-picker-item-detail{min-width:52px}
+ .catalog-inline-layer .catalog-picker-result{min-height:53px}
+ .profile-main,.profile-preferences{padding:15px}
+ .profile-main{gap:12px}
+ .profile-avatar{width:60px;height:60px;border-radius:16px;font-size:19px}
+ .profile-person h2{font-size:18px}
+}
+@media print{
+ .rp-print-only .rp-page-stack{width:194mm!important;margin:0!important;padding:0!important}
+ .rp-print-only .rp-a4{width:194mm!important;height:279mm!important;min-height:0!important;max-height:279mm!important;
+   display:flex!important;flex-direction:column!important;gap:2mm!important;page-break-after:always!important;break-after:page!important;overflow:visible!important}
+ .rp-print-only .rp-a4:last-child{page-break-after:auto!important;break-after:auto!important}
+ .rp-print-only .rp-pair{min-height:0!important;height:auto!important;flex:1 1 0!important;break-inside:avoid!important}
+ .rp-print-only .rp-copy{font-size:7pt}
+ .rp-print-only .rp-products th,.rp-print-only .rp-products td{padding:.7mm .45mm}
+ .rp-print-only .rp-products tbody td{height:4mm}
+}
+.rp-layout-1 .rp-pair{min-height:272mm}
+.rp-layout-2 .rp-pair{min-height:136mm}
+.rp-layout-3 .rp-pair{min-height:91mm}
+.rp-page-stack>.rp-a4{margin-bottom:8mm}
+@media print{.rp-page-stack>.rp-a4{margin-bottom:0!important}}
