@@ -169,6 +169,14 @@ export default function App(){
     };
     poll();return()=>{active=false;clearTimeout(wait)};
   },[auth,result?.pending,result?.requestId,post]);
+  // The authenticated logistic's name comes only from the protected USERS lookup.
+  // Never substitute the requester's name or impersonate a different assigned logistic.
+  const nameOfLogistic=(order:Order):string=>{
+    if(order.logisticName?.trim())return order.logisticName.trim();
+    if(user?.role==='logistic'&&user.name?.trim()&&
+      (!order.logisticId||String(order.logisticId)===String(user.id)))return user.name.trim();
+    return '';
+  };
   const openPrintSheet=(entries:PassData[])=>{
     if(!entries.length)return;
     setPrintPasses(entries.slice(0,3));
@@ -182,7 +190,7 @@ export default function App(){
       orderId:d.order.orderId,client:d.order.clientName,
       driver:d.order.driverName,driverPhone:d.order.driverPhone,vehicle:d.order.vehiclePlate,
       vehicleBrand:d.order.vehicleBrand,vehicleBody:d.order.vehicleBody,
-      warehouseClerkName:d.order.warehouseClerkName,cashierName:d.order.cashierName,logisticName:d.order.logisticName,
+      warehouseClerkName:d.order.warehouseClerkName,cashierName:d.order.cashierName,logisticName:nameOfLogistic(d.order),
       destination:[d.order.region,d.order.city].filter(Boolean).join(', '),
       deliveryDate:d.order.deliveryDate,createdAt:new Date().toISOString(),
       totalBags:d.order.totalBags,totalWeightKg:d.order.totalWeightKg,
@@ -191,7 +199,7 @@ export default function App(){
     };
     setPrintError('');
     setPrintPasses([pass]);setPrintKey(x=>x+1);
-  },[post]);
+  },[post,user]);
   useEffect(()=>{
     // Print only after the server has returned an actual ORD ID and its detail has
     // been fetched from the protected order database. Never print on a dry-run.
@@ -226,6 +234,7 @@ export default function App(){
       totalWeightKg:lines.reduce((sum,x)=>sum+Number(x.quantity||0)*Number(products.find(p=>p.code===x.productCode)?.weight||0),0),
       items:validLines.map(x=>({name:products.find(p=>p.code===x.productCode)?.name||'Товар для образца',quantity:Number(x.quantity||0),plant:x.plant||''})),
       driver:driverName,driverPhone,vehicle:vehiclePlate,vehicleBrand,vehicleBody,
+      logisticName:user?.role==='logistic'?user.name:'',
       demo:true,status:'DEMO'
     };
     openPrintSheet([pass]);
@@ -246,7 +255,7 @@ export default function App(){
         orderId:d.order.orderId,client:d.order.clientName,
         driver:d.order.driverName,driverPhone:d.order.driverPhone,vehicle:d.order.vehiclePlate,
         vehicleBrand:d.order.vehicleBrand,vehicleBody:d.order.vehicleBody,
-        warehouseClerkName:d.order.warehouseClerkName,cashierName:d.order.cashierName,logisticName:d.order.logisticName,
+        warehouseClerkName:d.order.warehouseClerkName,cashierName:d.order.cashierName,logisticName:nameOfLogistic(d.order),
         destination:[d.order.region,d.order.city].filter(Boolean).join(', '),
         deliveryDate:d.order.deliveryDate,createdAt:new Date().toISOString(),
         totalBags:d.order.totalBags,totalWeightKg:d.order.totalWeightKg,
