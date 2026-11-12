@@ -47,7 +47,7 @@ const statuses:Record<string,{label:string;className:string}>={
   CANCELLED:{label:'Отменена',className:'danger'},
 };
 const key=()=>crypto.randomUUID().replace(/-/g,'');
-const firstLine=():Line=>({key:key(),productCode:'',quantity:0,plant:''});
+const firstLine=(plant=''):Line=>({key:key(),productCode:'',quantity:0,plant});
 const stored=(name:string)=>{try{return sessionStorage.getItem(name)||''}catch{return ''}};
 const remember=(name:string,val:string|null)=>{try{val===null?sessionStorage.removeItem(name):sessionStorage.setItem(name,val)}catch{}};
 const currentTjDate=()=>{const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dushanbe',day:'2-digit',month:'2-digit',year:'numeric'}).formatToParts(new Date());const part=(x:string)=>p.find(i=>i.type===x)?.value||'';return part('year')+'-'+part('month')+'-'+part('day')};
@@ -67,7 +67,9 @@ export default function App(){
   const [user,setUser]=useState<User|null>(null);
   const [products,setProducts]=useState<Product[]>([]);
   const [clients,setClients]=useState<Client[]>([]);
-  const [view,setView]=useState<'new'|'inbox'>('new');
+  const [view,setView]=useState<'new'|'inbox'|'profile'>('new');
+  const [defaultPlant,setDefaultPlant]=useState('');
+  const [profileNotice,setProfileNotice]=useState('');
   const [clientId,setClientId]=useState('');
   const [clientName,setClientName]=useState('');
   const [region,setRegion]=useState(REGIONS[0]);
@@ -114,6 +116,21 @@ export default function App(){
   const [applyTarget,setApplyTarget]=useState<RecordEvent|null>(null);
   const initData=window.Telegram?.WebApp?.initData||'';
   const isLogist=['admin','logistic'].includes(user?.role||'');
+  useEffect(()=>{
+    if(!user?.id)return;
+    let plant='';
+    try{plant=localStorage.getItem('fatir.plant.'+user.id)||''}catch{}
+    const valid=PLANTS.some(p=>p.code===plant)?plant:'';
+    setDefaultPlant(valid);
+    setLines(old=>old.map(x=>!x.productCode?{...x,plant:valid}:x));
+  },[user?.id]);
+  const changeDefaultPlant=(plant:string)=>{
+    if(!isLogist||!PLANTS.some(p=>p.code===plant)&&plant!=='')return;
+    setDefaultPlant(plant);
+    try{localStorage.setItem('fatir.plant.'+user?.id,plant)}catch{}
+    setLines(current=>current.map(x=>!x.productCode?{...x,plant}:x));
+    setProfileNotice('Завод по умолчанию сохранён для этого устройства. В заявке его можно менять.');
+  };
   const haptic=()=>window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
   const post=useCallback(async(path:string,payload:Record<string,unknown>={})=>{
     const res=await api.post(path,{...payload,initData});
@@ -289,7 +306,7 @@ export default function App(){
     // Repeated edits on a completed earlier row never create duplicates.
     if(index===updated.length-1&&last.productCode&&last.plant&&
        Number.isSafeInteger(last.quantity)&&last.quantity>0&&updated.length<30){
-      return [...updated,firstLine()];
+      return [...updated,firstLine(defaultPlant)];
     }
     return updated;
   });
@@ -297,19 +314,26 @@ export default function App(){
   const validLines=preparedLines.filter(l=>l.productCode&&l.plant&&Number.isSafeInteger(l.quantity)&&l.quantity>0);
   const dropLine=(id:string)=>setLines(arr=>{
     const next=arr.filter(l=>l.key!==id);
-    return next.length?next:[firstLine()];
+    return next.length?next:[firstLine(defaultPlant)];
   });
   const openNewProduct=()=>{
     const existing=lines.find(l=>!l.productCode);
     if(existing){setPickerLineKey(existing.key);return}
     if(lines.length>=30)return;
-    const next=firstLine();
+    const next=firstLine(defaultPlant);
     setLines(current=>[...current,next]);
     setPickerLineKey(next.key);
   };
   const onPickProduct=(product:Product)=>{
     const id=pickerLineKey;
     if(!id)return;
+    const current=lines.find(l=>l.key===id);
+    const same=lines.find(l=>l.key!==id&&l.productCode===product.code&&l.plant===(current?.plant||defaultPlant));
+    if(same){
+      setErrorText('Этот товар уже добавлен с тем же заводом. Измените количество в существующей строке.');
+      setPickerLineKey(null);
+      return;
+    }
     updateLine(id,{productCode:product.code});
     setPickerLineKey(null);
     haptic();
@@ -320,6 +344,10 @@ export default function App(){
     if(!city.trim()||!deliveryDate){setErrorText('Укажите город и дату отгрузки.');return}
     if(!preparedLines.length||validLines.length!==preparedLines.length){
       setErrorText('Проверьте товар, количество и завод для каждой позиции.');return;
+    }
+    const combinations=validLines.map(x=>x.productCode+'|'+x.plant);
+    if(new Set(combinations).size!==combinations.length){
+      setErrorText('Одинаковые товары одного завода повторяются. Объедините количество в одной строке.');return;
     }
     setBusy(true);
     try{
@@ -340,7 +368,7 @@ export default function App(){
     }catch(e:any){setErrorText(e?.response?.data?.error||e?.message||'Не удалось сохранить заявку')}
     finally{setBusy(false)}
   };
-  const reset=()=>{remember('fatir.pending',null);setResult(null);setClientId('');setClientName('');setCity('');setAddress('');setLines([firstLine()]);setNotes('');setDeliveryType('Самовывоз');setDriverName('');setDriverPhone('');setVehiclePlate('');setVehicleBrand('');setVehicleBody('');setRequestId(key())};
+  const reset=()=>{remember('fatir.pending',null);setResult(null);setClientId('');setClientName('');setCity('');setAddress('');setLines([firstLine(defaultPlant)]);setNotes('');setDeliveryType('Самовывоз');setDriverName('');setDriverPhone('');setVehiclePlate('');setVehicleBrand('');setVehicleBody('');setRequestId(key())};
   const allFiltered=useMemo(()=>orders.filter(o=>(filter==='ALL'||o.status===filter)&&
     (o.orderId+' '+o.clientName+' '+o.city).toLowerCase().includes(orderSearch.toLowerCase())),[orders,filter,orderSearch]);
   const postAction=async(endpoint:string,payload:Record<string,unknown>)=>{
