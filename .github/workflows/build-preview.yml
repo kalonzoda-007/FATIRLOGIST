@@ -1,0 +1,57 @@
+name: Build migration-preview
+
+# Собирает React-приложение FATIR из kalonzoda-007/applicant (ветка migration-preview)
+# и публикует готовую сборку в папку migration-preview/ этого репозитория.
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths: ['.github/workflows/build-preview.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-preview
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout app source
+        uses: actions/checkout@v4
+        with:
+          repository: kalonzoda-007/applicant
+          ref: migration-preview
+          path: .app-src
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build
+        working-directory: .app-src
+        env:
+          VITE_API_BASE_URL: https://fatir-miniapp-migration.kalonzoda007.workers.dev
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Publish build to migration-preview/
+        run: |
+          rm -rf migration-preview
+          mkdir migration-preview
+          cp -r .app-src/dist/. migration-preview/
+          rm -rf .app-src
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to publish"
+          else
+            git commit -m "Publish FATIR migration-preview build (logo, mobile/desktop, fixes)"
+            git push
+          fi
