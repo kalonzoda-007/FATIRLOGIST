@@ -172,10 +172,9 @@ export default function App(){
   // The authenticated logistic's name comes only from the protected USERS lookup.
   // Never substitute the requester's name or impersonate a different assigned logistic.
   const nameOfLogistic=(order:Order):string=>{
-    if(order.logisticName?.trim())return order.logisticName.trim();
     if(user?.role==='logistic'&&user.name?.trim()&&
       (!order.logisticId||String(order.logisticId)===String(user.id)))return user.name.trim();
-    return '';
+    return order.logisticName?.trim()||'';
   };
   const openPrintSheet=(entries:PassData[])=>{
     if(!entries.length)return;
