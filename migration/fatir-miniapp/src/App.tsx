@@ -442,12 +442,14 @@ export default function App(){
         </div>
         <nav className="main-nav" aria-label="Навигация">
           <button type="button" onClick={()=>setView('new')} className={view==='new'?'active':''}>{ico('document-add-linear',18)} Заявка</button>
-          <button type="button" onClick={()=>setView('inbox')} className={view==='inbox'?'active':''}>{ico('chat-round-dots-linear',18)} {isLogist?'Обсуждения':'Мои заявки'}</button>
+          <button type="button" onClick={()=>setView('inbox')} className={view==='inbox'?'active':''}>{ico('clipboard-list-linear',18)} История заказов</button>
+          {isLogist&&<button type="button" onClick={()=>setView('profile')} className={view==='profile'?'active':''}>{ico('user-circle-linear',18)} Кабинет логиста</button>}
         </nav>
-        <div className="user-pill">{ico('shield-check-linear',16)}
-          <span><b>{user?.name||'Сотрудник'}</b><small>{isLogist?'Логистика · авторизован': 'Заявщик · авторизован'}</small></span>
+        <button type="button" className="user-pill user-pill-button" onClick={()=>isLogist?setView('profile'):setView('inbox')}
+          title={isLogist?'Открыть кабинет логиста':'Мои заявки'}>{ico('shield-check-linear',16)}
+          <span><b>{user?.name||'Сотрудник'}</b><small>{isLogist?'Логист · авторизован': 'Заявщик · авторизован'}</small></span>
           <div className="user-avatar">{(user?.name||'F').slice(0,1).toUpperCase()}</div>
-        </div>
+        </button>
       </div>
     </header>
     <main className="app-main">
@@ -593,18 +595,18 @@ export default function App(){
         </div></aside>
       </div>}
     </>:<>
-      <section className="hero inbox-hero"><div><div className="overline"><span className="live-dot"/> FATIR / DISCUSSION DESK / 02</div>
-        <h1>{isLogist?'Рабочее место':'Мои'} <em>{isLogist?'логиста.':'заявки.'}</em></h1>
-        <p>История решений, уточнения и согласование изменений по каждому ORD.</p></div>
+      <section className="hero inbox-hero"><div><div className="overline"><span className="live-dot"/> FATIR / ORD HISTORY / 02</div>
+        <h1>История <em>заказов.</em></h1>
+        <p>Журнал зарегистрированных ORD: клиент, товары, вес, дата и печать пропусков.</p></div>
         <button className="btn-light" onClick={loadOrders} disabled={listBusy}>{ico('refresh-linear',19)} Обновить</button>
       </section>
       <div className="workspace">
         <aside className={'queue glass-card '+(selected?'queue-mobile-hide':'')}>
-          <div className="queue-head"><div><span className="overline">РАБОЧАЯ ОЧЕРЕДЬ</span><h2>Заявки <span>{orders.length}</span></h2></div>
+          <div className="queue-head"><div><span className="overline">ЖУРНАЛ ORD</span><h2>Заявки <span>{orders.length}</span></h2></div>
             <button title="Обновить" className="icon-button" onClick={loadOrders}>{ico('refresh-circle-linear',20)}</button></div>
           <div className="queue-search">{ico('magnifer-linear',19)}<input placeholder="Поиск ORD, клиента, города..." value={orderSearch} onChange={e=>setOrderSearch(e.target.value)}/></div>
           <div className="filters">
-            {[['ALL','Все'],['DISCUSSION','Обсуждение'],['NEEDS_REVIEW','Проверить'],['DRAFT','Новые']].map(([val,label])=>
+            {[['ALL','Все'],['DRAFT','Новые'],['NEEDS_REVIEW','Проверка'],['CONFIRMED','Подтверждено']].map(([val,label])=>
               <button key={val} className={filter===val?'on':''} onClick={()=>setFilter(val)}>{label}</button>)}
           </div>
           <div className="pass-batch-selector">
@@ -636,8 +638,8 @@ export default function App(){
           {selected&&<button type="button" className="back-mobile" onClick={()=>{setSelected('');setDetail(null)}}>{ico('alt-arrow-left-linear',19)} Все заявки</button>}
           {discussionError&&<Warning>{discussionError}</Warning>}
           {discussionMessage&&<div className="notice-success">{ico('check-circle-linear',18)} {discussionMessage}</div>}
-          {!selected?<div className="blank-desk"><div className="blank-graphic">{ico('chat-round-dots-linear',45)}</div>
-            <h2>Выберите заявку</h2><p>Здесь появятся детали заказа, история обсуждения и инструменты логиста.</p></div>:
+          {!selected?<div className="blank-desk"><div className="blank-graphic">{ico('clipboard-list-linear',45)}</div>
+            <h2>Выберите заявку</h2><p>Здесь появятся товары, данные отгрузки, номер ORD и печать пропуска.</p></div>:
           detailBusy&&!detail?<div className="blank-desk"><div className="loader"/><p>Загружаем историю заказа…</p></div>:
           detail?<div className="desk-content">
             <div className="order-top"><div><span className="overline">ЗАЯВКА / {detail.order.orderId}</span>
@@ -733,8 +735,8 @@ export default function App(){
     <footer className="site-footer"><span>© FATIR • Logistics Workspace</span><span>Solar icons — 480 Design / IconBuddy · CC BY 4.0</span></footer>
     <nav className="mobile-dock glass-surface" aria-label="Мобильная навигация">
       <button className={view==='new'?'active':''} onClick={()=>setView('new')}>{ico('document-add-linear',22)}<span>Заявка</span></button>
-      <button className={view==='inbox'?'active':''} onClick={()=>setView('inbox')}>{ico('chat-round-dots-linear',22)}<span>{isLogist?'Логистика':'Мои заявки'}</span></button>
-      <button onClick={()=>{haptic();view==='inbox'?loadOrders():setView('inbox')}}>{ico('refresh-circle-linear',22)}<span>Обновить</span></button>
+      <button className={view==='inbox'?'active':''} onClick={()=>setView('inbox')}>{ico('clipboard-list-linear',22)}<span>История</span></button>
+      <button className={view==='profile'?'active':''} onClick={()=>isLogist?setView('profile'):setView('inbox')}>{ico('user-circle-linear',22)}<span>{isLogist?'Кабинет':'Аккаунт'}</span></button>
     </nav>
   </div>;
 }
