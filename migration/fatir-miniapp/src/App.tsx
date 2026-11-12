@@ -1,6 +1,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PrintPassSheet, {type PassData} from './PrintPassSheet';
+import ProductPicker, {type CatalogProduct} from './ProductPicker';
 import { api } from './api';
 import { Icon } from '@iconify/react';
 
@@ -17,7 +18,7 @@ declare global {
 }
 
 type User = {id:string; name:string; role:string};
-type Product = {code:string;name:string;weight:number;unit:string;aliases?:string[]};
+type Product = CatalogProduct;
 type Client = {code:string;name:string;region:string;city:string;active:boolean};
 type Line = {key:string; productCode:string; quantity:number;plant:string};
 type Order = {
@@ -81,6 +82,7 @@ export default function App(){
   const [vehicleBody,setVehicleBody]=useState('');
   const [notes,setNotes]=useState('');
   const [lines,setLines]=useState<Line[]>([firstLine()]);
+  const [pickerLineKey,setPickerLineKey]=useState<string|null>(null);
   const [requestId,setRequestId]=useState(()=>stored('fatir.pending')||key());
   const [result,setResult]=useState<Result|null>(()=>stored('fatir.pending')?{pending:true,requestId:stored('fatir.pending')}:null);
   const [busy,setBusy]=useState(false);
@@ -285,11 +287,25 @@ export default function App(){
   });
   const preparedLines=lines.filter(l=>l.productCode||l.plant||l.quantity>0);
   const validLines=preparedLines.filter(l=>l.productCode&&l.plant&&Number.isSafeInteger(l.quantity)&&l.quantity>0);
-  const addLine=()=>setLines(arr=>arr.length>=30||arr.some(l=>!l.productCode&&!l.plant&&l.quantity===0)?arr:[...arr,firstLine()]);
   const dropLine=(id:string)=>setLines(arr=>{
     const next=arr.filter(l=>l.key!==id);
     return next.length?next:[firstLine()];
   });
+  const openNewProduct=()=>{
+    const existing=lines.find(l=>!l.productCode);
+    if(existing){setPickerLineKey(existing.key);return}
+    if(lines.length>=30)return;
+    const next=firstLine();
+    setLines(current=>[...current,next]);
+    setPickerLineKey(next.key);
+  };
+  const onPickProduct=(product:Product)=>{
+    const id=pickerLineKey;
+    if(!id)return;
+    updateLine(id,{productCode:product.code});
+    setPickerLineKey(null);
+    haptic();
+  };
   const submit=async(mode:'validate'|'create'='validate')=>{
     haptic();setErrorText('');setValidationNotice('');
     if(!clientId&&!clientName.trim()){setErrorText('Выберите клиента или заполните имя нового.');return}
@@ -447,8 +463,16 @@ export default function App(){
                    onClick={()=>dropLine(line.key)}>{ico('trash-bin-trash-linear',18)}</button>
                 </div>
                 <div className="field"><label htmlFor={'product-'+line.key}>Наименование товара</label>
-                  <select id={'product-'+line.key} value={line.productCode} onChange={e=>updateLine(line.key,{productCode:e.target.value})}>
-                  <option value="">Выберите товар из каталога</option>{products.map(p=><option key={p.code} value={p.code}>{p.name} · {p.code}</option>)}</select>
+                  <button type="button" id={'product-'+line.key} className={'catalog-select-trigger'+(p?' has-product':'')}
+                    aria-haspopup="dialog" title="Открыть быстрый поиск товара"
+                    onClick={()=>setPickerLineKey(line.key)}>
+                    <span className="catalog-select-icon">{ico('magnifer-linear',18)}</span>
+                    <span className="catalog-select-text">
+                      <strong>{p?p.name:'Найти и выбрать товар'}</strong>
+                      <small>{p?p.code+' · '+p.weight+' кг / мешок'+(p.grade?' · '+p.grade:''):'Поиск по имени, сорту, транскрипции или SKU'}</small>
+                    </span>
+                    {ico('alt-arrow-down-linear',17)}
+                  </button>
                 </div>
                 <div className="field-grid"><div className="field"><label htmlFor={'plant-'+line.key}>Завод</label><select id={'plant-'+line.key} value={line.plant}
                   onChange={e=>updateLine(line.key,{plant:e.target.value})}><option value="">Выбрать завод</option>
@@ -464,8 +488,8 @@ export default function App(){
               </div>
             })}
             <div className="product-auto-hint">{ico('check-circle-linear',18)} Заполните товар, завод и количество — следующая позиция появится автоматически.</div>
-            <button type="button" className="btn-dashed" disabled={lines.length>=30}
-              onClick={addLine}>{ico('add-circle-linear',20)} {lines.length>=30?'Максимум 30 товаров':'Добавить товар вручную'}</button>
+            <button type="button" className="btn-dashed" disabled={lines.length>=30&&!lines.some(l=>!l.productCode)}
+              onClick={openNewProduct}>{ico('add-circle-linear',18)} {lines.length>=30&&!lines.some(l=>!l.productCode)?'Максимум 30 товаров':'Добавить товар — быстрый поиск'}</button>
             <div className="total-strip"><div><span>Всего мешков</span><strong>{fmt(totalBags)}</strong></div>
               <div><span>Общая масса</span><strong>{fmt(totalWeight)} <small>кг</small></strong></div></div>
             <p className="notice-line">{ico('info-circle-linear',16)} Выбранный завод не означает резервирование. Остатки подтверждает склад.</p>
@@ -664,6 +688,9 @@ export default function App(){
           <button className="btn-primary" disabled={actionBusy} onClick={applyApproved}>{actionBusy?'Применяем…':'Подтвердить применение'} {ico('check-circle-linear',19)}</button></div>
       </div>
     </div>}
+    {pickerLineKey&&<ProductPicker products={products}
+      currentCode={lines.find(l=>l.key===pickerLineKey)?.productCode}
+      onSelect={onPickProduct} onClose={()=>setPickerLineKey(null)}/>}
     {!!printPasses.length&&<PrintPassSheet passes={printPasses} printKey={printKey} onClose={()=>setPrintPasses([])}/>}
     <footer className="site-footer"><span>© FATIR • Logistics Workspace</span><span>Solar icons — 480 Design / IconBuddy · CC BY 4.0</span></footer>
     <nav className="mobile-dock glass-surface" aria-label="Мобильная навигация">
