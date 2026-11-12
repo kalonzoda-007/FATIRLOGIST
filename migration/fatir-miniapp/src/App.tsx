@@ -476,7 +476,7 @@ export default function App(){
         <span className="overline">{result.pending?'ОБРАБОТКА ЗАЯВКИ':'ЗАЯВКА ЗАРЕГИСТРИРОВАНА'}</span>
         <h2>{result.pending?'Ожидаем номер ORD':result.orderId}</h2>
         <p>{result.pending?'Выполняется проверка товаров и запись в Google Sheets. Не отправляйте заявку повторно.':
-          'Номер клиента: '+result.clientId+'. '+(result.requiresReview?'Нужно согласование нового клиента.':'Логистика получила заявку.')}</p>
+          'Номер клиента: '+(result.clientId||'назначается автоматически')+'. '+(result.requiresReview?'Требуется проверить нового клиента.':'Заявка записана в журнал FATIR.')}</p>
         {pollError&&<Warning>{pollError}</Warning>}
         {printError&&<Warning>{printError}</Warning>}
         {!result.pending&&result.orderId&&<button type="button" className="btn-light" onClick={()=>printRegisteredOrder(result.orderId!).catch(()=>setPrintError('Не удалось проверить ORD для печати'))}>{ico('printer-linear',18)} Повторно распечатать 2 экземпляра</button>}
@@ -642,6 +642,9 @@ export default function App(){
         <p>Журнал зарегистрированных ORD: клиент, товары, вес, дата и печать пропусков.</p></div>
         <button className="btn-light" onClick={loadOrders} disabled={listBusy}>{ico('refresh-linear',19)} Обновить</button>
       </section>
+      {result?.pending&&<div className="pending-order-note">
+        {ico('hourglass-line-linear',19)} <span>Ваша заявка обрабатывается. Номер ORD появится здесь после подтверждения записи в Google Sheets. Не отправляйте повторно.</span>
+      </div>}
       <div className="workspace">
         <aside className={'queue glass-card '+(selected?'queue-mobile-hide':'')}>
           <div className="queue-head"><div><span className="overline">ЖУРНАЛ ORD</span><h2>Заявки <span>{orders.length}</span></h2></div>
