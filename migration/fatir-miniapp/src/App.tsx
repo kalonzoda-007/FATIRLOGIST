@@ -192,7 +192,8 @@ export default function App(){
   // Never substitute the requester's name or impersonate a different assigned logistic.
   const nameOfLogistic=(order:Order):string=>{
     if(user?.role==='logistic'&&user.name?.trim()&&
-      (!order.logisticId||String(order.logisticId)===String(user.id)))return user.name.trim();
+      (String(order.logisticId)===String(user.id)||
+       (!order.logisticId&&String(order.requesterId)===String(user.id))))return user.name.trim();
     return order.logisticName?.trim()||'';
   };
   const openPrintSheet=(entries:PassData[])=>{
