@@ -50,7 +50,10 @@ export const filterCatalog=(products:CatalogProduct[],query:string,grade:string,
    const searchable=[title,normalizeProductQuery(p.grade||''),...aliases,code,normalizeProductQuery(p.code)].join(' ');
    let score=0;
    if(q){
-     if(!tokens.every(t=>searchable.includes(t)))return null;
+     const pureGradeQuery=!!desired;
+     if(pureGradeQuery){
+       if(canonicalGrade(p.grade||'')!==desired)return null;
+     }else if(!tokens.every(t=>searchable.includes(t)))return null;
      if(code===query.trim().toLowerCase()||code.endsWith(query.trim().toLowerCase()))score+=120;
      if(title===q)score+=100;
      else if(title.startsWith(q))score+=70;
