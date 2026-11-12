@@ -250,7 +250,7 @@ export default function App(){
       deliveryDate,createdAt:new Date().toISOString(),
       totalBags:lines.reduce((sum,x)=>sum+Number(x.quantity||0),0),
       totalWeightKg:lines.reduce((sum,x)=>sum+Number(x.quantity||0)*Number(products.find(p=>p.code===x.productCode)?.weight||0),0),
-      items:validLines.map(x=>({name:products.find(p=>p.code===x.productCode)?.name||'Товар для образца',quantity:Number(x.quantity||0),plant:x.plant||''})),
+      items:validLines.map(x=>({name:products.find(p=>p.code===x.productCode)?.name||'Товар для образца',quantity:Number(x.quantity||0),plant:x.plant||'',weightKg:Number(x.quantity||0)*Number(products.find(p=>p.code===x.productCode)?.weight||0)})),
       driver:driverName,driverPhone,vehicle:vehiclePlate,vehicleBrand,vehicleBody,
       logisticName:user?.role==='logistic'?user.name:'',
       demo:true,status:'DEMO'
