@@ -8,6 +8,18 @@ export type PassData={
   warehouseClerkName?:string;cashierName?:string;logisticName?:string;
   totalBags:number;totalWeightKg:number;items:PassItem[];status?:string;demo?:boolean;
 };
+// Print-only normalization: a repeated identical persisted row is shown once in
+// the paired permit. The authoritative ORD/ORDER_ITEMS records remain untouched.
+export function uniquePrintedItems(items:PassItem[]):PassItem[]{
+ const seen=new Set<string>();
+ return items.filter(x=>{
+   if(!x.name?.trim()||!Number.isFinite(Number(x.quantity))||Number(x.quantity)<=0)return false;
+   const identity=[x.name.trim().toLocaleLowerCase(),x.plant.trim().toLowerCase(),Number(x.quantity),x.weightKg==null?'':Number(x.weightKg)].join('|');
+   if(seen.has(identity))return false;
+   seen.add(identity);return true;
+ });
+}
+const copiesPerPage=(count:number)=>count<=5?3:count<=12?2:1;
 const fmt=(v:number)=>Number(v||0).toLocaleString('ru-RU');
 const display=(v?:string)=>String(v||'').trim()||'________________';
 function dateOnly(v:string){
@@ -19,7 +31,9 @@ function Cell({label,value}:{label:string;value?:string}){
  return <div className="rp-cell"><span>{label}</span><strong>{display(value)}</strong></div>;
 }
 function OneCopy({data,copy}:{data:PassData;copy:'МУҲОФИЗАТ'|'МИЗОҶ'}){
- const items=data.items.filter(x=>x.name&&Number(x.quantity)>0);
+ const items=uniquePrintedItems(data.items);
+ const totalKg=items.reduce((sum,x)=>sum+Number(x.weightKg||0),0);
+ const bags=items.reduce((sum,x)=>sum+Number(x.quantity||0),0);
  return <article className={'rp-copy'+(data.demo?' rp-demo':'')}>
    <div className="rp-title">Нусха барои {copy==='МУҲОФИЗАТ'?'муҳофизат':'мизоҷ'}</div>
    <div className="rp-meta"><strong>Рухсатнома № _________</strong><strong>Лента _________</strong></div>
@@ -37,9 +51,9 @@ function OneCopy({data,copy}:{data:PassData;copy:'МУҲОФИЗАТ'|'МИЗО�
      <colgroup><col style={{width:'7%'}}/><col style={{width:'43%'}}/><col style={{width:'18%'}}/><col style={{width:'14%'}}/><col style={{width:'18%'}}/></colgroup>
      <thead><tr><th>№</th><th>Номгӯи маҳсулот</th><th>Миқдор</th><th>Ченак</th><th>Вазни холис, кг</th></tr></thead>
      <tbody>{items.map((x,i)=><tr key={i}><td>{i+1}</td><td className="rp-product-name">{x.name}</td><td>{fmt(x.quantity)}</td><td>дона</td><td>{x.weightKg==null?'—':fmt(x.weightKg)}</td></tr>)}</tbody>
-     <tfoot><tr><th colSpan={4}>Ҳамагӣ вазни холис</th><th>{fmt(data.totalWeightKg)}</th></tr></tfoot>
+     <tfoot><tr><th colSpan={4}>Ҳамагӣ вазни холис</th><th>{fmt(totalKg)}</th></tr></tfoot>
    </table>
-   <div className="rp-qty">Ҳамагӣ халта: <strong>{fmt(data.totalBags)}</strong> · Санаи боргирӣ: <strong>{dateOnly(data.deliveryDate)}</strong></div>
+   <div className="rp-qty">Ҳамагӣ халта: <strong>{fmt(bags)}</strong> · Санаи боргирӣ: <strong>{dateOnly(data.deliveryDate)}</strong></div>
    <div className="rp-sign">Ному насаби анбордор <span>{display(data.warehouseClerkName)}</span> Имзо <span>________</span></div>
    <div className="rp-sign">Ному насаби ронанда <span>{display(data.driver)}</span> Имзо <span>________</span></div>
    <div className="rp-sign">Ному насаби хазинадори навбатдор <span>{display(data.cashierName)}</span> Имзо <span>________</span></div>
@@ -48,11 +62,23 @@ function OneCopy({data,copy}:{data:PassData;copy:'МУҲОФИЗАТ'|'МИЗО�
  </article>;
 }
 function Sheet({passes}:{passes:PassData[]}){
- return <div className="rp-a4">
-   {passes.slice(0,3).map((p,i)=><section className="rp-pair" key={p.orderId+'-'+i}>
-      <OneCopy data={p} copy="МУҲОФИЗАТ"/>
-      <OneCopy data={p} copy="МИЗОҶ"/>
-   </section>)}
+ // Smaller orders share the A4 sheet. Large orders use more vertical room
+ // rather than overflowing into subsequent copies on the same page.
+ const pages:PassData[][]=[];
+ for(const pass of passes.slice(0,3)){
+   const needed=copiesPerPage(uniquePrintedItems(pass.items).length);
+   const last=pages[pages.length-1];
+   if(!last||last.length>=Math.min(...last.map(x=>copiesPerPage(uniquePrintedItems(x.items).length)),needed)){
+     pages.push([pass]);
+   }else last.push(pass);
+ }
+ return <div className="rp-page-stack">
+   {pages.map((page,pageNo)=><div className={'rp-a4 rp-layout-'+page.length} key={pageNo}>
+     {page.map((p,i)=><section className="rp-pair" key={p.orderId+'-'+i}>
+       <OneCopy data={p} copy="МУҲОФИЗАТ"/>
+       <OneCopy data={p} copy="МИЗОҶ"/>
+     </section>)}
+   </div>)}
  </div>;
 }
 export default function PrintPassSheet({passes,printKey,onClose}:{passes:PassData[];printKey:number;onClose:()=>void}){
