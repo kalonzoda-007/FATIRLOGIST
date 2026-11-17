@@ -5,6 +5,7 @@ import ProductPicker, {type CatalogProduct} from './ProductPicker';
 import { api } from './api';
 import {clientPlatformLabel,deviceLayout,type DeviceLayout} from './telegramLayout';
 import { Icon } from '@iconify/react';
+import fatirCompanyLogo from './assets/fatir-logo.png';
 
 declare global {
   interface Window {
@@ -14,6 +15,12 @@ declare global {
       ready():void;
       expand():void;
       colorScheme?:string;
+      setHeaderColor?(color:string):void;
+      setBackgroundColor?(color:string):void;
+      disableVerticalSwipes?():void;
+      enableClosingConfirmation?():void;
+      disableClosingConfirmation?():void;
+      BackButton?: { show():void; hide():void; onClick(cb:()=>void):void; offClick(cb:()=>void):void };
       HapticFeedback?: { impactOccurred(type:string):void; notificationOccurred(type:string):void };
     } };
   }
@@ -41,6 +48,8 @@ type Result = {pending?:boolean;requestId?:string;orderId?:string;clientId?:stri
 const PLANTS=[{code:'PL-AGR',name:'Агро'},{code:'PL-ALN',name:'Альянс'},{code:'PL-GLS',name:'Гулистан'}];
 const REGIONS=['Согдийская область','Душанбе','Хатлонская область','ГБАО'];
 const statuses:Record<string,{label:string;className:string}>={
+  SHIPPED:{label:'Отгружена',className:'confirmed'},
+  COMPLETED:{label:'Завершена',className:'confirmed'},
   DRAFT:{label:'Новая',className:'draft'},
   NEEDS_REVIEW:{label:'Требует проверки',className:'attention'},
   DISCUSSION:{label:'Обсуждение',className:'discussion'},
@@ -55,7 +64,9 @@ const remember=(name:string,val:string|null)=>{try{val===null?sessionStorage.rem
 const currentTjDate=()=>{const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dushanbe',day:'2-digit',month:'2-digit',year:'numeric'}).formatToParts(new Date());const part=(x:string)=>p.find(i=>i.type===x)?.value||'';return part('year')+'-'+part('month')+'-'+part('day')};
 const plantName=(id:string)=>PLANTS.find(p=>p.code===id)?.name||'Не выбран';
 const fmt=(v:number)=>Number(v||0).toLocaleString('ru-RU');
-const fmtTime=(iso:string)=>{try{return new Date(iso).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Dushanbe'})}catch{return iso}};
+const MAX_BAGS=100000;
+const clampBags=(v:string)=>v===''?0:Math.min(MAX_BAGS,Math.max(0,Math.trunc(Number(v)||0)));
+const fmtTime=(iso:string)=>{const d=new Date(iso);if(!iso||Number.isNaN(d.getTime()))return '';try{return d.toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Dushanbe'})}catch{return ''}};
 const ico=(name:string,size=20)=><Icon icon={'solar:'+name} width={size} height={size} aria-hidden="true" />;
 function Status({value}:{value:string}){const s=statuses[value]||{label:value||'Неизвестно',className:'draft'};return <span className={'status status-'+s.className}><span className="status-dot"/>{s.label}</span>}
 function Warning({children}:{children:React.ReactNode}){return <div className="warning">{ico('danger-circle-linear',18)} <span>{children}</span></div>}
@@ -160,6 +171,7 @@ export default function App(){
     const tg=window.Telegram?.WebApp;
     if(!tg?.initData){setAuth('denied');setAuthMessage('Откройте Mini App через кнопку FATIR-бота в Telegram. Обычная ссылка не передаёт данные авторизации.');return}
     tg.ready();tg.expand();
+    try{tg.setHeaderColor?.('#F8F6EE');tg.setBackgroundColor?.('#F8F6EE');tg.disableVerticalSwipes?.()}catch{}
     let active=true;
     let retryTimer:ReturnType<typeof setTimeout>|undefined;
     setAuth('checking');setAuthMessage('');
@@ -336,7 +348,23 @@ export default function App(){
   // An empty row may already have the logistic's default factory selected.
   // It is only an item after the user chooses a product or enters a quantity.
   const preparedLines=lines.filter(l=>l.productCode||l.quantity>0);
-  const validLines=preparedLines.filter(l=>l.productCode&&l.plant&&Number.isSafeInteger(l.quantity)&&l.quantity>0);
+  const validLines=preparedLines.filter(l=>l.productCode&&l.plant&&Number.isSafeInteger(l.quantity)&&l.quantity>0&&l.quantity<=MAX_BAGS);
+  // Нативная кнопка «Назад» Telegram в мобильной раскладке: из карточки заявки к списку.
+  useEffect(()=>{
+    const bb=window.Telegram?.WebApp?.BackButton;
+    if(!bb||auth!=='ready'||chosenLayout!=='mobile'||view!=='inbox'||!selected)return;
+    const back=()=>{setSelected('');setDetail(null)};
+    bb.onClick(back);bb.show();
+    return ()=>{bb.offClick(back);bb.hide()};
+  },[auth,chosenLayout,view,selected]);
+  // Telegram переспросит при закрытии, если заявка заполнена, но не отправлена.
+  const formDirty=Boolean(auth==='ready'&&view==='new'&&!result&&(clientId||clientName.trim()||city.trim()||address.trim()||notes.trim()||preparedLines.length));
+  useEffect(()=>{
+    const tg=window.Telegram?.WebApp;
+    if(!tg)return;
+    if(formDirty)tg.enableClosingConfirmation?.();else tg.disableClosingConfirmation?.();
+    return ()=>tg.disableClosingConfirmation?.();
+  },[formDirty]);
   const dropLine=(id:string)=>setLines(arr=>{
     const next=arr.filter(l=>l.key!==id);
     return next.length?next:[firstLine(defaultPlant)];
@@ -367,6 +395,7 @@ export default function App(){
     haptic();setErrorText('');setValidationNotice('');
     if(!clientId&&!clientName.trim()){setErrorText('Выберите клиента или заполните имя нового.');return}
     if(!city.trim()||!deliveryDate){setErrorText('Укажите город и дату отгрузки.');return}
+    if(deliveryDate<currentTjDate()){setErrorText('Дата отгрузки не может быть в прошлом.');return}
     if(!preparedLines.length||validLines.length!==preparedLines.length){
       setErrorText('Проверьте товар, количество и завод для каждой позиции.');return;
     }
@@ -445,7 +474,7 @@ export default function App(){
 
   if(auth!=='ready')return <main className="auth-screen">
     <div className="ambient a1"/><div className="ambient a2"/>
-    <div className="auth-card glass-card"><div className="mark large">F<span>·</span></div>
+    <div className="auth-card glass-card"><img className="company-logo large" src={fatirCompanyLogo} alt="ФАТИР — фирменный логотип" />
       <span className="overline">FATIR · SECURE WORKSPACE</span>
       <h1>{auth==='checking'?'Подключаем рабочее пространство':'Доступ ограничен'}</h1>
       <p>{authMessage||(auth==='checking'?'Проверяем подпись Telegram и список пользователей USERS…':'Не удалось проверить доступ')}</p>
@@ -461,8 +490,9 @@ export default function App(){
     <div className="migration-warning" role="status">🧪 ПРОВЕРОЧНАЯ ВЕРСИЯ FATIR. Кнопка «Отправить заявку» создаёт реальный ORD в рабочей базе. «Проверить без отправки» ничего не сохраняет. Изменение согласований пока отключено.</div>
     <header className="site-header">
       <div className="header-inner glass-surface">
-        <div className="brand" onClick={()=>setView('new')} role="button" tabIndex={0}>
-          <div className="mark">F<span>·</span></div>
+        <div className="brand" onClick={()=>setView('new')} role="button" tabIndex={0}
+          onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setView('new')}}}>
+          <img className="company-logo" src={fatirCompanyLogo} alt="ФАТИР" />
           <div className="brand-type"><strong>FATIR</strong><small>Logistics Workspace</small></div>
         </div>
         <nav className="main-nav" aria-label="Навигация">
@@ -570,8 +600,8 @@ export default function App(){
                     <button type="button" onClick={()=>updateLine(line.key,{quantity:Math.max(0,line.quantity-1)})}>{ico('minus-circle-linear',19)}</button>
                     <input id={'qty-'+line.key} aria-label={'Количество мешков, товар '+(i+1)} inputMode="numeric" type="number" min={1} max={100000}
                       placeholder="0" value={line.quantity>0?line.quantity:''}
-                      onChange={e=>updateLine(line.key,{quantity:e.target.value===''?0:Number(e.target.value)})}/>
-                    <button type="button" onClick={()=>updateLine(line.key,{quantity:line.quantity+1})}>{ico('add-circle-linear',19)}</button>
+                      onChange={e=>updateLine(line.key,{quantity:clampBags(e.target.value)})}/>
+                    <button type="button" onClick={()=>updateLine(line.key,{quantity:Math.min(MAX_BAGS,line.quantity+1)})}>{ico('add-circle-linear',19)}</button>
                   </div></div></div>
                 {p&&<div className="line-footer"><span>{p.code} · {p.weight} кг / мешок</span><b>{fmt(p.weight*line.quantity)} кг</b></div>}
               </div>
@@ -613,7 +643,7 @@ export default function App(){
                   </select></div>
               </div>
             </div>}
-            <div className="field-grid"><div className="field"><label htmlFor="date">Желаемая дата</label><input id="date" type="date" value={deliveryDate} onChange={e=>setDeliveryDate(e.target.value)}/></div>
+            <div className="field-grid"><div className="field"><label htmlFor="date">Желаемая дата</label><input id="date" type="date" min={currentTjDate()} value={deliveryDate} onChange={e=>setDeliveryDate(e.target.value)}/></div>
               <div className="field"><label htmlFor="address">Адрес / ориентир</label><input id="address" value={address} onChange={e=>setAddress(e.target.value)} placeholder="При необходимости" maxLength={160}/></div></div>
             <div className="field"><label htmlFor="notes">Примечание к заказу</label><textarea id="notes" rows={3} value={notes}
               onChange={e=>setNotes(e.target.value)} placeholder="Уточнения, автомобиль клиента, пожелания..." maxLength={400}/></div>
@@ -804,7 +834,7 @@ export default function App(){
                       <option value="">Выберите товар</option>{products.map(p=><option value={p.code} key={p.code}>{p.name} · {p.code}</option>)}</select></div>
                     <div className="field-grid"><div className="field"><label>Завод</label><select value={li.plant} onChange={e=>setDraftLines(arr=>arr.map(x=>x.key===li.key?{...x,plant:e.target.value}:x))}>
                       <option value="">Выбрать завод</option>{PLANTS.map(p=><option value={p.code} key={p.code}>{p.name}</option>)}</select></div>
-                      <div className="field"><label>Мешки</label><input type="number" min="1" max="100000" value={li.quantity} onChange={e=>setDraftLines(arr=>arr.map(x=>x.key===li.key?{...x,quantity:Number(e.target.value)}:x))}/></div></div>
+                      <div className="field"><label>Мешки</label><input type="number" inputMode="numeric" min="1" max={MAX_BAGS} value={li.quantity} onChange={e=>setDraftLines(arr=>arr.map(x=>x.key===li.key?{...x,quantity:clampBags(e.target.value)}:x))}/></div></div>
                     {prod&&<div className="line-footer">{prod.weight} кг за мешок<span>{fmt(prod.weight*li.quantity)} кг</span></div>}
                   </div>;
                 })}

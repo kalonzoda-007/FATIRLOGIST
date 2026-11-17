@@ -1,5 +1,4 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,13 +6,13 @@
 :root{--ink:#2E3A2F;--forest:#28392D;--green:#6B7F5B;--cream:#F8F6EE;--dim:#7E8879;--line:rgba(105,126,97,.18);--glass:rgba(255,255,255,.59);--shadow:0 18px 48px rgba(40,61,46,.075);--hover:0 22px 56px rgba(40,61,46,.13);--focus:rgba(107,127,91,.24)}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:#F8F6EE;color:var(--ink);font-family:'Manrope',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body{margin:0;background:#F8F6EE;color:var(--ink);font-family:'Manrope',system-ui,sans-serif;min-height:100vh;min-height:100dvh;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit}
 button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:disabled{opacity:.55;cursor:not-allowed}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .shell,.auth-screen{position:relative;isolation:isolate;min-height:100vh;background:linear-gradient(149deg,#fbfaf5,#f4f5ed 49%,#eeeede)}
-.ambient{position:fixed;z-index:-1;pointer-events:none;border-radius:50%;filter:blur(12px);opacity:.62}
+.ambient{position:fixed;z-index:-1;pointer-events:none;border-radius:50%;opacity:.62}
 .a1{top:-250px;right:-180px;width:720px;height:680px;background:radial-gradient(circle,#d9e6cfaa 0%,#d9e6cf00 65%)}
 .a2{top:490px;left:-370px;width:850px;height:850px;background:radial-gradient(circle,#eedfbd99,#eedfbd00 68%)}
 .a3{bottom:-280px;right:-200px;width:680px;height:680px;background:radial-gradient(circle,#c7d6c79e,#c7d6c700 70%)}
@@ -657,3 +656,25 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .tg-desktop .app-main,.tg-mobile .app-main{padding:0!important}
  .tg-mobile .mobile-dock{display:none!important}
 }
+
+
+/* ===== Фирменный логотип ФАТИР ===== */
+.company-logo{display:block;width:48px;height:48px;object-fit:cover;flex-shrink:0;border-radius:50%;border:2px solid rgba(255,255,255,.92);box-shadow:0 9px 23px rgba(30,58,32,.2)}
+.company-logo.large{width:88px;height:88px;margin-bottom:23px;border-width:3px;box-shadow:0 14px 32px rgba(30,58,32,.2)}
+@media(max-width:620px){.company-logo{width:42px;height:42px}}
+.brand:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:14px}
+
+/* ===== Телефон: скорость, касания, safe-area (только мобильная раскладка) ===== */
+button,select,input,textarea,summary{touch-action:manipulation}
+.tg-mobile .site-header{padding-top:calc(9px + env(safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+.tg-mobile .glass-card{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(255,255,255,.88);box-shadow:0 8px 24px rgba(40,61,46,.06),inset 0 1px 0 rgba(255,255,255,.9)}
+.tg-mobile .glass-surface{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);background:rgba(255,255,255,.84)}
+.tg-mobile .ambient{opacity:.45}
+/* 16px в полях ввода: iOS не будет автоматически увеличивать страницу при фокусе */
+.tg-mobile .field input,.tg-mobile .field select,.tg-mobile .field textarea,.tg-mobile .composer textarea,.tg-mobile .queue-search input{font-size:16px}
+.tg-mobile .icon-button{min-width:42px;min-height:42px}
+.tg-mobile .quantity-control button{min-width:48px;min-height:48px}
+.tg-mobile .btn-primary{min-height:52px}
+.tg-mobile .btn-primary.small,.tg-mobile .btn-light.small{min-height:42px}
+.tg-mobile .mobile-dock{bottom:max(10px,env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px))}
+@media(hover:none){.btn-primary:hover:not(:disabled),.btn-dashed:hover{transform:none}}
