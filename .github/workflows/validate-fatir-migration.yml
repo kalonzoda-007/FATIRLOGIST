@@ -1,0 +1,29 @@
+name: Validate FATIR migration (no deployment)
+on:
+  pull_request:
+    paths:
+      - 'migration/fatir-miniapp/**'
+      - '.github/workflows/validate-fatir-migration.yml'
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: migration/fatir-miniapp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - run: npm run build
+      - run: npx tsc --noEmit
+      - run: npx esbuild src/ProductPicker.tsx --bundle --platform=node --format=esm --packages=external --outfile=.product-picker-test.mjs
+      - run: node scripts/check-catalog-search.mjs
+      - run: npx esbuild src/telegramLayout.ts --bundle --platform=node --format=esm --outfile=.telegram-layout-test.mjs
+      - run: node scripts/check-telegram-layout.mjs
+      - run: npx esbuild src/PrintPassSheet.tsx --bundle --platform=node --format=esm --packages=external --outfile=.print-pass-test.mjs
+      - run: node scripts/check-print-pass.mjs
+      - run: node --check worker/src/index.js
+      - run: node --test worker/tests/*.test.js

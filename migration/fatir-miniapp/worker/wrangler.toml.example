@@ -1,0 +1,14 @@
+name = "fatir-miniapp-migration"
+main = "src/index.js"
+compatibility_date = "2026-11-05"
+
+# Replace in your private/local wrangler.toml. Do not include n8n URLs in Git.
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "fatir-miniapp"
+# database_id = "YOUR_D1_DATABASE_ID"
+#
+# [vars]
+# ALLOWED_ORIGIN = "https://kalonzoda-007.github.io"
+# FRONTEND_URL = "https://kalonzoda-007.github.io/FATIRLOGIST/"
+# N8N_BOOTSTRAP_URL and other URLs must be configured using wrangler secret put.

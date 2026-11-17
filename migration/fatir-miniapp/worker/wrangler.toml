@@ -1,0 +1,14 @@
+name = "fatir-miniapp-migration"
+main = "src/index.js"
+compatibility_date = "2026-11-06"
+
+[vars]
+ALLOWED_ORIGIN = "https://kalonzoda-007.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fatir-miniapp"
+database_id = "549816e4-0449-43d7-a07f-d0c69e7159af"
+
+[observability]
+enabled = true
